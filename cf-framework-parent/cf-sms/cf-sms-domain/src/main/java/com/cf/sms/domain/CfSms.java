@@ -20,6 +20,8 @@ public class CfSms implements Serializable {
 
     private Integer status;
 
+    private Integer sendStatus;
+
     private Long createTime;
 
     private Long expireTime;
@@ -77,6 +79,14 @@ public class CfSms implements Serializable {
 
     public void setStatus(Integer status) {
         this.status = status;
+    }
+
+    public Integer getSendStatus() {
+        return sendStatus;
+    }
+
+    public void setSendStatus(Integer sendStatus) {
+        this.sendStatus = sendStatus;
     }
 
     public Long getCreateTime() {

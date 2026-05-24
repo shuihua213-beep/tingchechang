@@ -7,6 +7,7 @@
     <result column="code" property="code" jdbcType="VARCHAR" />
     <result column="type" property="type" jdbcType="TINYINT" />
     <result column="status" property="status" jdbcType="BIT" />
+    <result column="send_status" property="sendStatus" jdbcType="TINYINT" />
     <result column="create_time" property="createTime" jdbcType="BIGINT" />
     <result column="expire_time" property="expireTime" jdbcType="BIGINT" />
   </resultMap>
@@ -69,7 +70,7 @@
     </where>
   </sql>
   <sql id="Base_Column_List" >
-    id, phone, code, type, status, create_time, expire_time
+    id, phone, code, type, status, send_status, create_time, expire_time
   </sql>
   <select id="selectByExample" resultMap="BaseResultMap" parameterType="com.cf.sms.domain.CfSmsExample" >
     select
@@ -110,10 +111,10 @@
   </delete>
   <insert id="insert" parameterType="com.cf.sms.domain.CfSms" >
     insert into cf_sms (id, phone, code, 
-      type, status, create_time, 
+      type, status, send_status, create_time, 
       expire_time)
     values (#{id,jdbcType=VARCHAR}, #{phone,jdbcType=VARCHAR}, #{code,jdbcType=VARCHAR}, 
-      #{type,jdbcType=TINYINT}, #{status,jdbcType=BIT}, #{createTime,jdbcType=BIGINT}, 
+      #{type,jdbcType=TINYINT}, #{status,jdbcType=BIT}, #{sendStatus,jdbcType=TINYINT}, #{createTime,jdbcType=BIGINT}, 
       #{expireTime,jdbcType=BIGINT})
   </insert>
   <insert id="insertSelective" parameterType="com.cf.sms.domain.CfSms" >
@@ -227,6 +228,9 @@
       </if>
       <if test="status != null" >
         status = #{status,jdbcType=BIT},
+      </if>
+      <if test="sendStatus != null" >
+        send_status = #{sendStatus,jdbcType=TINYINT},
       </if>
       <if test="createTime != null" >
         create_time = #{createTime,jdbcType=BIGINT},

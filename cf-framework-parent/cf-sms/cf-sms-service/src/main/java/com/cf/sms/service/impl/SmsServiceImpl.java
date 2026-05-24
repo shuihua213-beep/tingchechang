@@ -34,6 +34,7 @@ import org.apache.dubbo.config.annotation.Reference;
 import org.apache.dubbo.config.annotation.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import com.cf.framework.redis.utils.RedisUtils;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -55,6 +56,8 @@ public class SmsServiceImpl implements SmsService {
     private IdWorker idWorker;
     @Autowired
     StringRedisTemplate stringRedisTemplate;
+    @Autowired
+    private RedisUtils redisUtils;
     @Reference(version = "1.0.0", retries = 0, timeout = 5000, check = false)
     private CfWeixinConfigService cfWeixinConfigService;
 
@@ -62,8 +65,10 @@ public class SmsServiceImpl implements SmsService {
     public void sendSms(String phone, Integer type) {
         checkSendFrequently(phone, type);
         String code = (int)((Math.random()*9+1)*100000)+"";
-        cfSmsMapper.insert(new CfSms(idWorker.nextId(),phone,code,type,0,System.currentTimeMillis(),
-                System.currentTimeMillis()+CfSms.SMS_CODE_VALID_TIME));
+        CfSms cfSms = new CfSms(idWorker.nextId(),phone,code,type,0,System.currentTimeMillis(),
+                System.currentTimeMillis()+CfSms.SMS_CODE_VALID_TIME);
+        cfSms.setSendStatus(0);
+        cfSmsMapper.insert(cfSms);
 
         List<CfWeixinConfig> cfWeixinConfigs = cfWeixinConfigService.getWeiXinLoginConfigragtion("ali_sms");
         String signName = WeiXinConfigUtils.getWeiXinConfigragtionByEnName("sign_name", cfWeixinConfigs);
@@ -72,7 +77,7 @@ public class SmsServiceImpl implements SmsService {
         String accessKeyId = WeiXinConfigUtils.getWeiXinConfigragtionByEnName("access_key_id", cfWeixinConfigs);
         String secret = WeiXinConfigUtils.getWeiXinConfigragtionByEnName("secret", cfWeixinConfigs);
 
-        sendSmsByAli(phone,"{\"code\":\""+code+"\"}",signName,templateCode,regionId,accessKeyId,secret,"","");
+        sendSmsByAli(phone,"{\"code\":\""+code+"\"}",signName,templateCode,regionId,accessKeyId,secret,"", cfSms.getId());
     }
 
     @Override
@@ -114,12 +119,57 @@ public class SmsServiceImpl implements SmsService {
             request.putQueryParameter("OutId", OutId);
         }
 
-        try {
-            CommonResponse response = client.getCommonResponse(request);
-        } catch (ServerException e) {
-            ExceptionCast.cast(CommonCode.FAIL, e.getMessage());
-        } catch (ClientException e) {
-            ExceptionCast.cast(CommonCode.FAIL, e.getMessage());
+        int maxRetries = 3;
+        int retryCount = 0;
+        long backoff = 1000;
+        boolean success = false;
+        String lastErrorSummary = "";
+        String returnCode = "";
+
+        while (retryCount <= maxRetries) {
+            try {
+                CommonResponse response = client.getCommonResponse(request);
+                String data = response.getData();
+                if (StringUtils.isNotEmpty(data)) {
+                    com.alibaba.fastjson.JSONObject jsonObject = com.alibaba.fastjson.JSONObject.parseObject(data);
+                    returnCode = jsonObject.getString("Code");
+                    if ("OK".equalsIgnoreCase(returnCode)) {
+                        success = true;
+                        break;
+                    } else {
+                        lastErrorSummary = jsonObject.getString("Message");
+                        throw new RuntimeException(lastErrorSummary);
+                    }
+                } else {
+                    success = true;
+                    break;
+                }
+            } catch (Exception e) {
+                lastErrorSummary = e.getMessage();
+                retryCount++;
+                if (retryCount <= maxRetries) {
+                    try {
+                        Thread.sleep(backoff);
+                        backoff *= 2;
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (success) {
+            if (StringUtils.isNotEmpty(OutId)) {
+                CfSms updateSms = new CfSms();
+                updateSms.setId(OutId);
+                updateSms.setSendStatus(1);
+                cfSmsMapper.updateByPrimaryKeySelective(updateSms);
+            }
+            redisUtils.deleteFailedRecord(PhoneNumbers);
+        } else {
+            redisUtils.saveFailedRecord(PhoneNumbers, templateCode, returnCode, lastErrorSummary, retryCount, TemplateParam, signName, regionId, accessKeyId, secret, SmsUpExtendCode, OutId);
+            ExceptionCast.cast(CommonCode.FAIL, lastErrorSummary);
         }
     }
 
