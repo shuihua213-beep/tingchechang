@@ -1,0 +1,17 @@
+diff --git a/cf-framework-parent/cf-ad/cf-ad-admin/src/main/java/com/cf/ad/admin/controller/CfAdLinksController.java b/cf-framework-parent/cf-ad/cf-ad-admin/src/main/java/com/cf/ad/admin/controller/CfAdLinksController.java
+index 068a8ac..fc44b7a 100644
+--- a/cf-framework-parent/cf-ad/cf-ad-admin/src/main/java/com/cf/ad/admin/controller/CfAdLinksController.java
++++ b/cf-framework-parent/cf-ad/cf-ad-admin/src/main/java/com/cf/ad/admin/controller/CfAdLinksController.java
+@@ -41,6 +41,12 @@ public class CfAdLinksController implements CfAdLinkersSwagger {
+     @Override
+     @RequestMapping(value = "getListByQuery", method = RequestMethod.GET)
+     public ResponseResult getListByQuery(CfAdLinksQuery cfAdLinksQuery) throws Exception {
++        if (cfAdLinksQuery.getPage() == null || cfAdLinksQuery.getPage() <= 0) {
++            cfAdLinksQuery.setPage(1);
++        }
++        if (cfAdLinksQuery.getSize() == null || cfAdLinksQuery.getSize() <= 0) {
++            cfAdLinksQuery.setSize(10);
++        }
+         List<CfAdLinks> cfAdLinks = cfAdLinksService.getListByQuery(cfAdLinksQuery);
+         if(cfAdLinks==null || cfAdLinks.size()==0){
+             return new ResponseResult(CommonCode.NO_MORE_DATAS);
