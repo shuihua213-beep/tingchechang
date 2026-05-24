@@ -39,9 +39,9 @@ public class CfAdQuery implements Serializable {
 
     private Long createTime;
 
-    private Integer page;
+    private Integer page = 1;
 
-    private Integer size;
+    private Integer size = 10;
 
     private String orderBy;
 
@@ -148,7 +148,7 @@ public class CfAdQuery implements Serializable {
     }
 
     public void setPage(Integer page) {
-        this.page = page;
+        this.page = (page == null || page <= 0) ? 1 : page;
     }
 
     public Integer getSize() {
@@ -156,7 +156,7 @@ public class CfAdQuery implements Serializable {
     }
 
     public void setSize(Integer size) {
-        this.size = size;
+        this.size = (size == null || size <= 0) ? 10 : size;
     }
 
     public String getOrderBy() {

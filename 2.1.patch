@@ -1,0 +1,106 @@
+diff --git a/cf-framework-parent/cf-ad/cf-ad-domain/src/main/java/com/cf/ad/domain/request/CfAdLinksQuery.java b/cf-framework-parent/cf-ad/cf-ad-domain/src/main/java/com/cf/ad/domain/request/CfAdLinksQuery.java
+index b9202ae..69c2dd9 100644
+--- a/cf-framework-parent/cf-ad/cf-ad-domain/src/main/java/com/cf/ad/domain/request/CfAdLinksQuery.java
++++ b/cf-framework-parent/cf-ad/cf-ad-domain/src/main/java/com/cf/ad/domain/request/CfAdLinksQuery.java
+@@ -36,9 +36,9 @@ public class CfAdLinksQuery implements Serializable {
+ 
+     private List<String> carrierIds;
+ 
+-    private Integer page;
++    private Integer page = 1;
+ 
+-    private Integer size;
++    private Integer size = 10;
+ 
+     private String orderBy;
+ 
+@@ -129,7 +129,7 @@ public class CfAdLinksQuery implements Serializable {
+     }
+ 
+     public void setPage(Integer page) {
+-        this.page = page;
++        this.page = (page == null || page <= 0) ? 1 : page;
+     }
+ 
+     public Integer getSize() {
+@@ -137,7 +137,7 @@ public class CfAdLinksQuery implements Serializable {
+     }
+ 
+     public void setSize(Integer size) {
+-        this.size = size;
++        this.size = (size == null || size <= 0) ? 10 : size;
+     }
+ 
+     public String getOrderBy() {
+diff --git a/cf-framework-parent/cf-ad/cf-ad-domain/src/main/java/com/cf/ad/domain/request/CfAdQuery.java b/cf-framework-parent/cf-ad/cf-ad-domain/src/main/java/com/cf/ad/domain/request/CfAdQuery.java
+index 314b8f3..d8c514a 100644
+--- a/cf-framework-parent/cf-ad/cf-ad-domain/src/main/java/com/cf/ad/domain/request/CfAdQuery.java
++++ b/cf-framework-parent/cf-ad/cf-ad-domain/src/main/java/com/cf/ad/domain/request/CfAdQuery.java
+@@ -39,9 +39,9 @@ public class CfAdQuery implements Serializable {
+ 
+     private Long createTime;
+ 
+-    private Integer page;
++    private Integer page = 1;
+ 
+-    private Integer size;
++    private Integer size = 10;
+ 
+     private String orderBy;
+ 
+@@ -148,7 +148,7 @@ public class CfAdQuery implements Serializable {
+     }
+ 
+     public void setPage(Integer page) {
+-        this.page = page;
++        this.page = (page == null || page <= 0) ? 1 : page;
+     }
+ 
+     public Integer getSize() {
+@@ -156,7 +156,7 @@ public class CfAdQuery implements Serializable {
+     }
+ 
+     public void setSize(Integer size) {
+-        this.size = size;
++        this.size = (size == null || size <= 0) ? 10 : size;
+     }
+ 
+     public String getOrderBy() {
+diff --git a/cf-framework-parent/cf-ad/cf-ad-service/src/main/java/com/cf/ad/service/impl/CfAdLinksServiceImpl.java b/cf-framework-parent/cf-ad/cf-ad-service/src/main/java/com/cf/ad/service/impl/CfAdLinksServiceImpl.java
+index c8d668b..d6ab940 100644
+--- a/cf-framework-parent/cf-ad/cf-ad-service/src/main/java/com/cf/ad/service/impl/CfAdLinksServiceImpl.java
++++ b/cf-framework-parent/cf-ad/cf-ad-service/src/main/java/com/cf/ad/service/impl/CfAdLinksServiceImpl.java
+@@ -147,9 +147,11 @@ public class CfAdLinksServiceImpl implements CfAdLinksService {
+         if(StringUtils.isNotEmpty(cfAdLinksQuery.getOrderBy())){
+             cfAdLinksExample.setOrderByClause(cfAdLinksQuery.getOrderBy());
+         }
+-        if(cfAdLinksQuery.getPage()!=null && cfAdLinksQuery.getSize()!=null){
+-            PageHelper.startPage(cfAdLinksQuery.getPage(), cfAdLinksQuery.getSize());
+-        }
++        Integer page = cfAdLinksQuery.getPage();
++        Integer size = cfAdLinksQuery.getSize();
++        page = (page == null || page <= 0) ? 1 : page;
++        size = (size == null || size <= 0) ? 10 : size;
++        PageHelper.startPage(page, size);
+         return cfAdLinksExample;
+     }
+ 
+diff --git a/cf-framework-parent/cf-ad/cf-ad-service/src/main/java/com/cf/ad/service/impl/CfAdServiceImpl.java b/cf-framework-parent/cf-ad/cf-ad-service/src/main/java/com/cf/ad/service/impl/CfAdServiceImpl.java
+index 330ce78..ac3ec58 100644
+--- a/cf-framework-parent/cf-ad/cf-ad-service/src/main/java/com/cf/ad/service/impl/CfAdServiceImpl.java
++++ b/cf-framework-parent/cf-ad/cf-ad-service/src/main/java/com/cf/ad/service/impl/CfAdServiceImpl.java
+@@ -76,9 +76,11 @@ public class CfAdServiceImpl implements CfAdService {
+         if(StringUtils.isNotEmpty(cfAdQuery.getOrderBy())){
+             cfAdExample.setOrderByClause(cfAdQuery.getOrderBy());
+         }
+-        if(cfAdQuery.getPage()!=null && cfAdQuery.getSize()!=null){
+-            PageHelper.startPage(cfAdQuery.getPage(), cfAdQuery.getSize());
+-        }
++        Integer page = cfAdQuery.getPage();
++        Integer size = cfAdQuery.getSize();
++        page = (page == null || page <= 0) ? 1 : page;
++        size = (size == null || size <= 0) ? 10 : size;
++        PageHelper.startPage(page, size);
+         return cfAdExample;
+     }
+ 

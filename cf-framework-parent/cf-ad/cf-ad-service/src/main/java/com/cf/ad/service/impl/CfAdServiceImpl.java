@@ -76,9 +76,11 @@ public class CfAdServiceImpl implements CfAdService {
         if(StringUtils.isNotEmpty(cfAdQuery.getOrderBy())){
             cfAdExample.setOrderByClause(cfAdQuery.getOrderBy());
         }
-        if(cfAdQuery.getPage()!=null && cfAdQuery.getSize()!=null){
-            PageHelper.startPage(cfAdQuery.getPage(), cfAdQuery.getSize());
-        }
+        Integer page = cfAdQuery.getPage();
+        Integer size = cfAdQuery.getSize();
+        page = (page == null || page <= 0) ? 1 : page;
+        size = (size == null || size <= 0) ? 10 : size;
+        PageHelper.startPage(page, size);
         return cfAdExample;
     }
 

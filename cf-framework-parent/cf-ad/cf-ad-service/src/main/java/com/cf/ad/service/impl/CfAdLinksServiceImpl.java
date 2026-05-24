@@ -147,9 +147,11 @@ public class CfAdLinksServiceImpl implements CfAdLinksService {
         if(StringUtils.isNotEmpty(cfAdLinksQuery.getOrderBy())){
             cfAdLinksExample.setOrderByClause(cfAdLinksQuery.getOrderBy());
         }
-        if(cfAdLinksQuery.getPage()!=null && cfAdLinksQuery.getSize()!=null){
-            PageHelper.startPage(cfAdLinksQuery.getPage(), cfAdLinksQuery.getSize());
-        }
+        Integer page = cfAdLinksQuery.getPage();
+        Integer size = cfAdLinksQuery.getSize();
+        page = (page == null || page <= 0) ? 1 : page;
+        size = (size == null || size <= 0) ? 10 : size;
+        PageHelper.startPage(page, size);
         return cfAdLinksExample;
     }
 
