@@ -41,6 +41,7 @@ public class CfAdLinksController implements CfAdLinkersSwagger {
     @Override
     @RequestMapping(value = "getListByQuery", method = RequestMethod.GET)
     public ResponseResult getListByQuery(CfAdLinksQuery cfAdLinksQuery) throws Exception {
+        cfAdLinksQuery.checkAndSetDefault();
         List<CfAdLinks> cfAdLinks = cfAdLinksService.getListByQuery(cfAdLinksQuery);
         if(cfAdLinks==null || cfAdLinks.size()==0){
             return new ResponseResult(CommonCode.NO_MORE_DATAS);

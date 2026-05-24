@@ -1,0 +1,34 @@
+diff --git a/cf-framework-parent/cf-ad/cf-ad-admin/src/main/java/com/cf/ad/admin/controller/CfAdLinksController.java b/cf-framework-parent/cf-ad/cf-ad-admin/src/main/java/com/cf/ad/admin/controller/CfAdLinksController.java
+index 068a8ac..aac9b98 100644
+--- a/cf-framework-parent/cf-ad/cf-ad-admin/src/main/java/com/cf/ad/admin/controller/CfAdLinksController.java
++++ b/cf-framework-parent/cf-ad/cf-ad-admin/src/main/java/com/cf/ad/admin/controller/CfAdLinksController.java
+@@ -41,6 +41,7 @@ public class CfAdLinksController implements CfAdLinkersSwagger {
+     @Override
+     @RequestMapping(value = "getListByQuery", method = RequestMethod.GET)
+     public ResponseResult getListByQuery(CfAdLinksQuery cfAdLinksQuery) throws Exception {
++        cfAdLinksQuery.checkAndSetDefault();
+         List<CfAdLinks> cfAdLinks = cfAdLinksService.getListByQuery(cfAdLinksQuery);
+         if(cfAdLinks==null || cfAdLinks.size()==0){
+             return new ResponseResult(CommonCode.NO_MORE_DATAS);
+diff --git a/cf-framework-parent/cf-ad/cf-ad-domain/src/main/java/com/cf/ad/domain/request/CfAdLinksQuery.java b/cf-framework-parent/cf-ad/cf-ad-domain/src/main/java/com/cf/ad/domain/request/CfAdLinksQuery.java
+index b9202ae..146890d 100644
+--- a/cf-framework-parent/cf-ad/cf-ad-domain/src/main/java/com/cf/ad/domain/request/CfAdLinksQuery.java
++++ b/cf-framework-parent/cf-ad/cf-ad-domain/src/main/java/com/cf/ad/domain/request/CfAdLinksQuery.java
+@@ -43,6 +43,17 @@ public class CfAdLinksQuery implements Serializable {
+     private String orderBy;
+ 
+     private static final long serialVersionUID = 1L;
++    private static final int DEFAULT_PAGE_NUM = 1;
++    private static final int DEFAULT_PAGE_SIZE = 10;
++
++    public void checkAndSetDefault() {
++        if (page == null || page <= 0) {
++            page = DEFAULT_PAGE_NUM;
++        }
++        if (size == null || size <= 0) {
++            size = DEFAULT_PAGE_SIZE;
++        }
++    }
+ 
+     public String getId() {
+         return id;

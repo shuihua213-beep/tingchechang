@@ -43,6 +43,17 @@ public class CfAdLinksQuery implements Serializable {
     private String orderBy;
 
     private static final long serialVersionUID = 1L;
+    private static final int DEFAULT_PAGE_NUM = 1;
+    private static final int DEFAULT_PAGE_SIZE = 10;
+
+    public void checkAndSetDefault() {
+        if (page == null || page <= 0) {
+            page = DEFAULT_PAGE_NUM;
+        }
+        if (size == null || size <= 0) {
+            size = DEFAULT_PAGE_SIZE;
+        }
+    }
 
     public String getId() {
         return id;
