@@ -1,5 +1,6 @@
 package com.cf.sms.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.aliyuncs.CommonRequest;
 import com.aliyuncs.CommonResponse;
 import com.aliyuncs.DefaultAcsClient;
@@ -17,7 +18,9 @@ import com.cf.framework.utils.HttpClient;
 import com.cf.framework.utils.IdWorker;
 import com.cf.sms.dao.mapper.CfSmsMapper;
 import com.cf.sms.domain.CfSms;
+import com.cf.sms.domain.SmsFailRecord;
 import com.cf.sms.service.SmsService;
+import com.cf.sms.util.SmsRedisUtil;
 import com.cf.ucenter.domain.CfWeixinConfig;
 import com.cf.ucenter.service.CfWeixinConfigService;
 import com.cf.ucenter.wxtools.WeiXinConfigUtils;
@@ -32,6 +35,8 @@ import com.tencentcloudapi.common.profile.HttpProfile;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.annotation.Reference;
 import org.apache.dubbo.config.annotation.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
@@ -49,12 +54,19 @@ import java.util.concurrent.TimeUnit;
 @Service(version = "1.0.0", loadbalance = "roundrobin")
 public class SmsServiceImpl implements SmsService {
 
+    private static final Logger log = LoggerFactory.getLogger(SmsServiceImpl.class);
+    
+    private static final int MAX_RETRY_COUNT = 3;
+    private static final long BASE_RETRY_DELAY_MS = 1000;
+
     @Autowired
     private CfSmsMapper cfSmsMapper;
     @Autowired
     private IdWorker idWorker;
     @Autowired
     StringRedisTemplate stringRedisTemplate;
+    @Autowired
+    SmsRedisUtil smsRedisUtil;
     @Reference(version = "1.0.0", retries = 0, timeout = 5000, check = false)
     private CfWeixinConfigService cfWeixinConfigService;
 
@@ -62,7 +74,8 @@ public class SmsServiceImpl implements SmsService {
     public void sendSms(String phone, Integer type) {
         checkSendFrequently(phone, type);
         String code = (int)((Math.random()*9+1)*100000)+"";
-        cfSmsMapper.insert(new CfSms(idWorker.nextId(),phone,code,type,0,System.currentTimeMillis(),
+        String smsId = idWorker.nextId();
+        cfSmsMapper.insert(new CfSms(smsId, phone, code, type, CfSms.SMS_STATUS_INIT, System.currentTimeMillis(),
                 System.currentTimeMillis()+CfSms.SMS_CODE_VALID_TIME));
 
         List<CfWeixinConfig> cfWeixinConfigs = cfWeixinConfigService.getWeiXinLoginConfigragtion("ali_sms");
@@ -72,7 +85,15 @@ public class SmsServiceImpl implements SmsService {
         String accessKeyId = WeiXinConfigUtils.getWeiXinConfigragtionByEnName("access_key_id", cfWeixinConfigs);
         String secret = WeiXinConfigUtils.getWeiXinConfigragtionByEnName("secret", cfWeixinConfigs);
 
-        sendSmsByAli(phone,"{\"code\":\""+code+"\"}",signName,templateCode,regionId,accessKeyId,secret,"","");
+        try {
+            sendSmsByAliWithRetry(smsId, phone, "{\"code\":\""+code+"\"}", signName, templateCode, regionId, accessKeyId, secret, "", "");
+            updateSmsStatus(smsId, CfSms.SMS_STATUS_SENT);
+        } catch (Exception e) {
+            log.error("发送短信失败，smsId: {}, phone: {}", smsId, phone, e);
+            updateSmsStatus(smsId, CfSms.SMS_STATUS_FAIL);
+            saveFailRecord(smsId, phone, "{\"code\":\""+code+"\"}", signName, templateCode, regionId, accessKeyId, secret, "", "", e);
+            ExceptionCast.cast(CommonCode.FAIL, e.getMessage());
+        }
     }
 
     @Override
@@ -85,7 +106,58 @@ public class SmsServiceImpl implements SmsService {
 
     @Override
     public void sendSmsByAli(String PhoneNumbers, String TemplateParam, String signName, String templateCode, String regionId, String accessKeyId, String secret, String SmsUpExtendCode, String OutId) {
+        try {
+            sendSmsByAliWithRetry(idWorker.nextId(), PhoneNumbers, TemplateParam, signName, templateCode, regionId, accessKeyId, secret, SmsUpExtendCode, OutId);
+        } catch (Exception e) {
+            log.error("发送短信失败，PhoneNumbers: {}", PhoneNumbers, e);
+            ExceptionCast.cast(CommonCode.FAIL, e.getMessage());
+        }
+    }
 
+    public void sendSmsByAliWithRetry(String smsId, String PhoneNumbers, String TemplateParam, String signName, String templateCode, String regionId, String accessKeyId, String secret, String SmsUpExtendCode, String OutId) {
+        int retryCount = 0;
+        Exception lastException = null;
+        
+        while (retryCount <= MAX_RETRY_COUNT) {
+            try {
+                CommonResponse response = sendSmsByAliOnce(PhoneNumbers, TemplateParam, signName, templateCode, regionId, accessKeyId, secret, SmsUpExtendCode, OutId);
+                String responseData = response.getData();
+                if (StringUtils.isNotEmpty(responseData)) {
+                    com.alibaba.fastjson.JSONObject jsonObject = JSON.parseObject(responseData);
+                    String code = jsonObject.getString("Code");
+                    if ("OK".equals(code)) {
+                        return;
+                    } else {
+                        lastException = new RuntimeException("短信发送失败，运营商返回码：" + code);
+                    }
+                }
+            } catch (ServerException e) {
+                lastException = e;
+            } catch (ClientException e) {
+                lastException = e;
+            } catch (Exception e) {
+                lastException = e;
+            }
+
+            retryCount++;
+            if (retryCount <= MAX_RETRY_COUNT) {
+                try {
+                    long delay = BASE_RETRY_DELAY_MS * (long) Math.pow(2, retryCount - 1);
+                    log.warn("短信发送失败，将在 {}ms 后重试，当前重试次数: {}", delay, retryCount);
+                    Thread.sleep(delay);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        }
+
+        if (lastException != null) {
+            throw new RuntimeException("短信发送失败，已重试 " + MAX_RETRY_COUNT + " 次", lastException);
+        }
+    }
+
+    public CommonResponse sendSmsByAliOnce(String PhoneNumbers, String TemplateParam, String signName, String templateCode, String regionId, String accessKeyId, String secret, String SmsUpExtendCode, String OutId) throws Exception {
         DefaultProfile profile = DefaultProfile.getProfile(regionId, accessKeyId, secret);
         IAcsClient client = new DefaultAcsClient(profile);
 
@@ -114,13 +186,39 @@ public class SmsServiceImpl implements SmsService {
             request.putQueryParameter("OutId", OutId);
         }
 
-        try {
-            CommonResponse response = client.getCommonResponse(request);
-        } catch (ServerException e) {
-            ExceptionCast.cast(CommonCode.FAIL, e.getMessage());
-        } catch (ClientException e) {
-            ExceptionCast.cast(CommonCode.FAIL, e.getMessage());
+        return client.getCommonResponse(request);
+    }
+
+    private void updateSmsStatus(String smsId, Integer status) {
+        CfSms cfSms = new CfSms();
+        cfSms.setId(smsId);
+        cfSms.setStatus(status);
+        cfSmsMapper.updateByPrimaryKeySelective(cfSms);
+    }
+
+    private void saveFailRecord(String smsId, String phone, String templateParam, String signName, String templateCode, String regionId, String accessKeyId, String secret, String smsUpExtendCode, String outId, Exception e) {
+        SmsFailRecord failRecord = new SmsFailRecord();
+        failRecord.setId(smsId);
+        failRecord.setPhone(phone);
+        failRecord.setTemplateCode(templateCode);
+        failRecord.setSignName(signName);
+        failRecord.setTemplateParam(templateParam);
+        failRecord.setRegionId(regionId);
+        failRecord.setAccessKeyId(accessKeyId);
+        failRecord.setSecret(secret);
+        failRecord.setSmsUpExtendCode(smsUpExtendCode);
+        failRecord.setOutId(outId);
+        failRecord.setRetryCount(0);
+        failRecord.setCreateTime(System.currentTimeMillis());
+        failRecord.setLastRetryTime(System.currentTimeMillis());
+        
+        String errorSummary = e.getMessage();
+        if (errorSummary != null && errorSummary.length() > 500) {
+            errorSummary = errorSummary.substring(0, 500);
         }
+        failRecord.setErrorSummary(errorSummary);
+        
+        smsRedisUtil.saveFailRecord(failRecord);
     }
 
     @Override

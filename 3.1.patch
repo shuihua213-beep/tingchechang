@@ -1,0 +1,215 @@
+diff --git a/cf-framework-parent/cf-sms/cf-sms-domain/src/main/java/com/cf/sms/domain/SmsFailRecord.java b/cf-framework-parent/cf-sms/cf-sms-domain/src/main/java/com/cf/sms/domain/SmsFailRecord.java
+new file mode 100644
+index 0000000..19ce304
+--- /dev/null
++++ b/cf-framework-parent/cf-sms/cf-sms-domain/src/main/java/com/cf/sms/domain/SmsFailRecord.java
+@@ -0,0 +1,147 @@
++package com.cf.sms.domain;
++
++import java.io.Serializable;
++
++public class SmsFailRecord implements Serializable {
++
++    private static final long serialVersionUID = 1L;
++
++    private String id;
++    private String phone;
++    private String templateCode;
++    private String signName;
++    private String templateParam;
++    private String operatorCode;
++    private String errorSummary;
++    private Integer retryCount;
++    private Long createTime;
++    private Long lastRetryTime;
++    private String regionId;
++    private String accessKeyId;
++    private String secret;
++    private String smsUpExtendCode;
++    private String outId;
++
++    public SmsFailRecord() {
++    }
++
++    public String getId() {
++        return id;
++    }
++
++    public void setId(String id) {
++        this.id = id;
++    }
++
++    public String getPhone() {
++        return phone;
++    }
++
++    public void setPhone(String phone) {
++        this.phone = phone;
++    }
++
++    public String getTemplateCode() {
++        return templateCode;
++    }
++
++    public void setTemplateCode(String templateCode) {
++        this.templateCode = templateCode;
++    }
++
++    public String getSignName() {
++        return signName;
++    }
++
++    public void setSignName(String signName) {
++        this.signName = signName;
++    }
++
++    public String getTemplateParam() {
++        return templateParam;
++    }
++
++    public void setTemplateParam(String templateParam) {
++        this.templateParam = templateParam;
++    }
++
++    public String getOperatorCode() {
++        return operatorCode;
++    }
++
++    public void setOperatorCode(String operatorCode) {
++        this.operatorCode = operatorCode;
++    }
++
++    public String getErrorSummary() {
++        return errorSummary;
++    }
++
++    public void setErrorSummary(String errorSummary) {
++        this.errorSummary = errorSummary;
++    }
++
++    public Integer getRetryCount() {
++        return retryCount;
++    }
++
++    public void setRetryCount(Integer retryCount) {
++        this.retryCount = retryCount;
++    }
++
++    public Long getCreateTime() {
++        return createTime;
++    }
++
++    public void setCreateTime(Long createTime) {
++        this.createTime = createTime;
++    }
++
++    public Long getLastRetryTime() {
++        return lastRetryTime;
++    }
++
++    public void setLastRetryTime(Long lastRetryTime) {
++        this.lastRetryTime = lastRetryTime;
++    }
++
++    public String getRegionId() {
++        return regionId;
++    }
++
++    public void setRegionId(String regionId) {
++        this.regionId = regionId;
++    }
++
++    public String getAccessKeyId() {
++        return accessKeyId;
++    }
++
++    public void setAccessKeyId(String accessKeyId) {
++        this.accessKeyId = accessKeyId;
++    }
++
++    public String getSecret() {
++        return secret;
++    }
++
++    public void setSecret(String secret) {
++        this.secret = secret;
++    }
++
++    public String getSmsUpExtendCode() {
++        return smsUpExtendCode;
++    }
++
++    public void setSmsUpExtendCode(String smsUpExtendCode) {
++        this.smsUpExtendCode = smsUpExtendCode;
++    }
++
++    public String getOutId() {
++        return outId;
++    }
++
++    public void setOutId(String outId) {
++        this.outId = outId;
++    }
++}
+diff --git a/cf-framework-parent/cf-sms/cf-sms-service/src/main/java/com/cf/sms/util/SmsRedisUtil.java b/cf-framework-parent/cf-sms/cf-sms-service/src/main/java/com/cf/sms/util/SmsRedisUtil.java
+new file mode 100644
+index 0000000..8c75a6e
+--- /dev/null
++++ b/cf-framework-parent/cf-sms/cf-sms-service/src/main/java/com/cf/sms/util/SmsRedisUtil.java
+@@ -0,0 +1,56 @@
++package com.cf.sms.util;
++
++import com.alibaba.fastjson.JSON;
++import com.cf.sms.domain.SmsFailRecord;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.data.redis.core.StringRedisTemplate;
++import org.springframework.stereotype.Component;
++
++import java.util.Set;
++import java.util.concurrent.TimeUnit;
++
++@Component
++public class SmsRedisUtil {
++
++    @Autowired
++    private StringRedisTemplate stringRedisTemplate;
++
++    private static final String SMS_FAIL_RECORD_PREFIX = "sms:fail:";
++    private static final String SMS_PHONE_COMPENSATE_PREFIX = "sms:compensate:";
++    private static final long SMS_FAIL_RECORD_TTL = 86400;
++    private static final long SMS_PHONE_COMPENSATE_TTL = 600;
++
++    public void saveFailRecord(SmsFailRecord failRecord) {
++        String key = SMS_FAIL_RECORD_PREFIX + failRecord.getId();
++        stringRedisTemplate.opsForValue().set(key, JSON.toJSONString(failRecord), SMS_FAIL_RECORD_TTL, TimeUnit.SECONDS);
++    }
++
++    public SmsFailRecord getFailRecord(String id) {
++        String key = SMS_FAIL_RECORD_PREFIX + id;
++        String value = stringRedisTemplate.opsForValue().get(key);
++        if (value != null) {
++            return JSON.parseObject(value, SmsFailRecord.class);
++        }
++        return null;
++    }
++
++    public void deleteFailRecord(String id) {
++        String key = SMS_FAIL_RECORD_PREFIX + id;
++        stringRedisTemplate.delete(key);
++    }
++
++    public Set<String> getAllFailRecordKeys() {
++        return stringRedisTemplate.keys(SMS_FAIL_RECORD_PREFIX + "*");
++    }
++
++    public boolean tryLockPhoneCompensate(String phone) {
++        String key = SMS_PHONE_COMPENSATE_PREFIX + phone;
++        Boolean result = stringRedisTemplate.opsForValue().setIfAbsent(key, System.currentTimeMillis() + "", SMS_PHONE_COMPENSATE_TTL, TimeUnit.SECONDS);
++        return result != null && result;
++    }
++
++    public void unlockPhoneCompensate(String phone) {
++        String key = SMS_PHONE_COMPENSATE_PREFIX + phone;
++        stringRedisTemplate.delete(key);
++    }
++}
