@@ -15,8 +15,10 @@ import com.cf.framework.domain.ucenter.response.UcenterCode;
 import com.cf.framework.exception.ExceptionCast;
 import com.cf.framework.utils.HttpClient;
 import com.cf.framework.utils.IdWorker;
+import com.cf.framework.utils.RedisUtils;
 import com.cf.sms.dao.mapper.CfSmsMapper;
 import com.cf.sms.domain.CfSms;
+import com.cf.sms.domain.SmsFailedRecord;
 import com.cf.sms.service.SmsService;
 import com.cf.ucenter.domain.CfWeixinConfig;
 import com.cf.ucenter.service.CfWeixinConfigService;
@@ -32,22 +34,20 @@ import com.tencentcloudapi.common.profile.HttpProfile;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.annotation.Reference;
 import org.apache.dubbo.config.annotation.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-/**
- * 请在此填写描述
- *
- * @ClassName SmsServiceImpl
- * @Author 隔壁小王子 981011512@qq.com
- * @Date 2020/12/25/025 22:50
- * @Version 1.0
- **/
 @Service(version = "1.0.0", loadbalance = "roundrobin")
 public class SmsServiceImpl implements SmsService {
+
+    private static final Logger log = LoggerFactory.getLogger(SmsServiceImpl.class);
 
     @Autowired
     private CfSmsMapper cfSmsMapper;
@@ -55,14 +55,22 @@ public class SmsServiceImpl implements SmsService {
     private IdWorker idWorker;
     @Autowired
     StringRedisTemplate stringRedisTemplate;
+    @Autowired
+    private RedisUtils redisUtils;
     @Reference(version = "1.0.0", retries = 0, timeout = 5000, check = false)
     private CfWeixinConfigService cfWeixinConfigService;
 
     @Override
     public void sendSms(String phone, Integer type) {
+        sendSmsWithRetry(phone, type);
+    }
+
+    @Override
+    public void sendSmsWithRetry(String phone, Integer type) {
         checkSendFrequently(phone, type);
         String code = (int)((Math.random()*9+1)*100000)+"";
-        cfSmsMapper.insert(new CfSms(idWorker.nextId(),phone,code,type,0,System.currentTimeMillis(),
+        long smsId = idWorker.nextId();
+        cfSmsMapper.insert(new CfSms(String.valueOf(smsId),phone,code,type,CfSms.SMS_STATUS_PENDING,System.currentTimeMillis(),
                 System.currentTimeMillis()+CfSms.SMS_CODE_VALID_TIME));
 
         List<CfWeixinConfig> cfWeixinConfigs = cfWeixinConfigService.getWeiXinLoginConfigragtion("ali_sms");
@@ -72,7 +80,12 @@ public class SmsServiceImpl implements SmsService {
         String accessKeyId = WeiXinConfigUtils.getWeiXinConfigragtionByEnName("access_key_id", cfWeixinConfigs);
         String secret = WeiXinConfigUtils.getWeiXinConfigragtionByEnName("secret", cfWeixinConfigs);
 
-        sendSmsByAli(phone,"{\"code\":\""+code+"\"}",signName,templateCode,regionId,accessKeyId,secret,"","");
+        boolean success = sendSmsByAliWithRetry(phone,"{\"code\":\""+code+"\"}",signName,templateCode,regionId,accessKeyId,secret,"","", type);
+
+        if (success) {
+            cfSmsMapper.updateStatusByPrimaryKey(String.valueOf(smsId), CfSms.SMS_STATUS_SENT);
+            redisUtils.removeSmsFailedRecord(phone);
+        }
     }
 
     @Override
@@ -124,6 +137,142 @@ public class SmsServiceImpl implements SmsService {
     }
 
     @Override
+    public boolean sendSmsByAliWithRetry(String PhoneNumbers, String TemplateParam, String signName, String templateCode,
+                                          String regionId, String accessKeyId, String secret, String SmsUpExtendCode, String OutId, Integer type) {
+        int retryCount = 0;
+        int maxRetries = SmsFailedRecord.MAX_RETRY_COUNT;
+        Exception lastException = null;
+
+        DefaultProfile profile = DefaultProfile.getProfile(regionId, accessKeyId, secret);
+        IAcsClient client = new DefaultAcsClient(profile);
+
+        while (retryCount < maxRetries) {
+            try {
+                CommonRequest request = new CommonRequest();
+                request.setMethod(MethodType.POST);
+                request.setDomain("dysmsapi.aliyuncs.com");
+                request.setVersion("2017-05-25");
+                request.setAction("SendSms");
+                request.putQueryParameter("RegionId", regionId);
+                if(StringUtils.isNotEmpty(PhoneNumbers)){
+                    request.putQueryParameter("PhoneNumbers", PhoneNumbers);
+                }
+                if(StringUtils.isNotEmpty(signName)){
+                    request.putQueryParameter("SignName", signName);
+                }
+                if(StringUtils.isNotEmpty(templateCode)){
+                    request.putQueryParameter("TemplateCode", templateCode);
+                }
+                if(StringUtils.isNotEmpty(TemplateParam)){
+                    request.putQueryParameter("TemplateParam", TemplateParam);
+                }
+                if(StringUtils.isNotEmpty(SmsUpExtendCode)){
+                    request.putQueryParameter("SmsUpExtendCode", SmsUpExtendCode);
+                }
+                if(StringUtils.isNotEmpty(OutId)){
+                    request.putQueryParameter("OutId", OutId);
+                }
+
+                CommonResponse response = client.getCommonResponse(request);
+                String responseData = response.getData();
+                if (StringUtils.isNotEmpty(responseData) && responseData.contains("\"Code\":\"OK\"")) {
+                    log.info("SMS send success, phone={}, retryCount={}", PhoneNumbers, retryCount);
+                    return true;
+                }
+
+                log.warn("SMS send returned non-OK code, phone={}, response={}, retryCount={}", PhoneNumbers, responseData, retryCount);
+                retryCount++;
+                if (retryCount < maxRetries) {
+                    long backoffMs = SmsFailedRecord.INITIAL_BACKOFF_MS * (1L << (retryCount - 1));
+                    try {
+                        Thread.sleep(backoffMs);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
+                lastException = new RuntimeException("AliSMS returned: " + responseData);
+
+            } catch (ServerException e) {
+                log.warn("SMS ServerException, phone={}, errorCode={}, retryCount={}", PhoneNumbers, e.getErrCode(), retryCount);
+                lastException = e;
+                retryCount++;
+                if (retryCount < maxRetries) {
+                    long backoffMs = SmsFailedRecord.INITIAL_BACKOFF_MS * (1L << (retryCount - 1));
+                    try {
+                        Thread.sleep(backoffMs);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
+            } catch (ClientException e) {
+                log.warn("SMS ClientException, phone={}, errorCode={}, retryCount={}", PhoneNumbers, e.getErrCode(), retryCount);
+                lastException = e;
+                retryCount++;
+                if (retryCount < maxRetries) {
+                    long backoffMs = SmsFailedRecord.INITIAL_BACKOFF_MS * (1L << (retryCount - 1));
+                    try {
+                        Thread.sleep(backoffMs);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
+            }
+        }
+
+        String carrierReturnCode = extractCarrierReturnCode(lastException);
+        String exceptionSummary = extractExceptionSummary(lastException);
+
+        redisUtils.saveSmsFailedRecord(PhoneNumbers, type, templateCode, carrierReturnCode,
+                exceptionSummary, retryCount, SmsFailedRecord.FAILED_RECORD_TTL_SECONDS);
+
+        if (type != null) {
+            cfSmsMapper.updateStatusByPhoneAndType(PhoneNumbers, type, CfSms.SMS_STATUS_FAILED);
+        }
+        log.error("SMS send failed after {} retries, phone={}, type={}, templateCode={}, carrierCode={}, summary={}",
+                retryCount, PhoneNumbers, type, templateCode, carrierReturnCode, exceptionSummary);
+        return false;
+    }
+
+    private String extractCarrierReturnCode(Exception e) {
+        if (e == null) {
+            return "UNKNOWN";
+        }
+        if (e instanceof ServerException) {
+            return "ServerException:" + ((ServerException) e).getErrCode();
+        }
+        if (e instanceof ClientException) {
+            return "ClientException:" + ((ClientException) e).getErrCode();
+        }
+        return e.getClass().getSimpleName();
+    }
+
+    private String extractExceptionSummary(Exception e) {
+        if (e == null) {
+            return "No exception captured";
+        }
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        e.printStackTrace(pw);
+        String fullStack = sw.toString();
+        String[] lines = fullStack.split("\\n");
+        StringBuilder summary = new StringBuilder();
+        int maxLines = Math.min(lines.length, 5);
+        for (int i = 0; i < maxLines; i++) {
+            if (summary.length() > 0) {
+                summary.append("\\n");
+            }
+            summary.append(lines[i].trim());
+        }
+        if (lines.length > maxLines) {
+            summary.append("\\n... (truncated, total ").append(lines.length).append(" lines)");
+        }
+        return summary.toString();
+    }
+
+    @Override
     public void checkCode(String phone, String code, Integer type) {
         String phoneSmsCheckCounts = null;
         String redisKey = phone+"_"+type;
@@ -161,7 +310,6 @@ public class SmsServiceImpl implements SmsService {
         String appSecretKey = WeiXinConfigUtils.getWeiXinConfigragtionByEnName(platform+"_app_secret_key", cfWeixinConfigs);
 
 
-        //验证码腾讯图形验证码
         Credential cred = new Credential(secretId, secretKey);
 
         HttpProfile httpProfile = new HttpProfile();
@@ -196,8 +344,6 @@ public class SmsServiceImpl implements SmsService {
                 ExceptionCast.cast(UcenterCode.CAPTCHA_NOT_MATCH);
             }
         }
-
-//        String s = DescribeCaptchaResultResponse.toJsonString(resp);
 
     }
 }

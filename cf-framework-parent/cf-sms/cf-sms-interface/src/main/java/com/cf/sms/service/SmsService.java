@@ -19,6 +19,13 @@ public interface SmsService {
     public void sendSms(String phone, Integer type);
 
     /**
+     * 带重试的短信发送
+     * @param phone
+     * @param type
+     */
+    public void sendSmsWithRetry(String phone, Integer type);
+
+    /**
      * 检查是否频繁发送
      * @param phone
      * @param type
@@ -38,6 +45,12 @@ public interface SmsService {
      * @param OutId
      */
     public void sendSmsByAli(String PhoneNumbers, String TemplateParam, String signName, String templateCode, String regionId, String accessKeyId, String secret, String SmsUpExtendCode, String OutId);
+
+    /**
+     * 带重试的阿里云短信发送
+     */
+    public boolean sendSmsByAliWithRetry(String PhoneNumbers, String TemplateParam, String signName, String templateCode,
+                                          String regionId, String accessKeyId, String secret, String SmsUpExtendCode, String OutId, Integer type);
 
     /**
      * 校验短信验证码

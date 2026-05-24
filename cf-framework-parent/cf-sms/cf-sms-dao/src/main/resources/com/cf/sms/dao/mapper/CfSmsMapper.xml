@@ -251,4 +251,20 @@
     update cf_sms set status = 1 where phone = #{phone,jdbcType=VARCHAR} and code = #{code,jdbcType=VARCHAR}
     and type = #{type,jdbcType=INTEGER} and status = 0 and expire_time > #{currentTime,jdbcType=BIGINT}
   </update>
+
+  <update id="updateStatusByPhoneAndType">
+    update cf_sms set status = #{status,jdbcType=INTEGER}
+    where phone = #{phone,jdbcType=VARCHAR} and type = #{type,jdbcType=INTEGER}
+  </update>
+
+  <select id="getFailedSendLogs" resultMap="BaseResultMap">
+    select * from cf_sms where phone = #{phone,jdbcType=VARCHAR}
+    and type = #{type,jdbcType=INTEGER} and status = #{status,jdbcType=INTEGER}
+    order by create_time desc limit 5
+  </select>
+
+  <update id="updateStatusByPrimaryKey">
+    update cf_sms set status = #{status,jdbcType=INTEGER}
+    where id = #{id,jdbcType=VARCHAR}
+  </update>
 </mapper>

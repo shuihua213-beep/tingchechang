@@ -7,8 +7,12 @@ public class CfSms implements Serializable {
     final public static Integer SMS_TYPE_REGISTER = 1;
     final public static Integer SMS_TYPE_IDENTITY = 2;
     final public static Integer SMS_TYPE_NOTICE = 3;
-    final public static Long SMS_SEND_FREQUENTLY_LIMIT_TIME = 60000L;  //短信发送间隔时间(限制频繁发送)
-    final public static Long SMS_CODE_VALID_TIME = 300000L;  //短信验证码有效时间
+    final public static Integer SMS_STATUS_PENDING = 0;
+    final public static Integer SMS_STATUS_SENT = 1;
+    final public static Integer SMS_STATUS_FAILED = 2;
+    final public static Integer SMS_STATUS_RETRYING = 3;
+    final public static Long SMS_SEND_FREQUENTLY_LIMIT_TIME = 60000L;
+    final public static Long SMS_CODE_VALID_TIME = 300000L;
 
     private String id;
 

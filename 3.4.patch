@@ -1,0 +1,463 @@
+diff --git a/cf-framework-parent/cf-framework-utils/src/main/java/com/cf/framework/utils/RedisUtils.java b/cf-framework-parent/cf-framework-utils/src/main/java/com/cf/framework/utils/RedisUtils.java
+new file mode 100644
+index 0000000..4fe3783
+--- /dev/null
++++ b/cf-framework-parent/cf-framework-utils/src/main/java/com/cf/framework/utils/RedisUtils.java
+@@ -0,0 +1,141 @@
++package com.cf.framework.utils;
++
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.data.redis.core.Cursor;
++import org.springframework.data.redis.core.ScanOptions;
++import org.springframework.data.redis.core.StringRedisTemplate;
++import org.springframework.stereotype.Component;
++
++import java.util.ArrayList;
++import java.util.Collections;
++import java.util.List;
++import java.util.Map;
++import java.util.concurrent.TimeUnit;
++
++@Component
++public class RedisUtils {
++
++    @Autowired
++    private StringRedisTemplate stringRedisTemplate;
++
++    public void set(String key, String value, long seconds) {
++        stringRedisTemplate.opsForValue().set(key, value, seconds, TimeUnit.SECONDS);
++    }
++
++    public String get(String key) {
++        return stringRedisTemplate.opsForValue().get(key);
++    }
++
++    public void delete(String key) {
++        stringRedisTemplate.delete(key);
++    }
++
++    public Boolean hasKey(String key) {
++        return stringRedisTemplate.hasKey(key);
++    }
++
++    public Boolean setnx(String key, String value, long seconds) {
++        Boolean result = stringRedisTemplate.opsForValue().setIfAbsent(key, value);
++        if (result != null && result) {
++            stringRedisTemplate.expire(key, seconds, TimeUnit.SECONDS);
++        }
++        return result;
++    }
++
++    public void expire(String key, long seconds) {
++        stringRedisTemplate.expire(key, seconds, TimeUnit.SECONDS);
++    }
++
++    public void hset(String key, String hashKey, String value) {
++        stringRedisTemplate.opsForHash().put(key, hashKey, value);
++    }
++
++    public String hget(String key, String hashKey) {
++        Object val = stringRedisTemplate.opsForHash().get(key, hashKey);
++        return val != null ? val.toString() : null;
++    }
++
++    public Map<Object, Object> hgetAll(String key) {
++        return stringRedisTemplate.opsForHash().entries(key);
++    }
++
++    public void hmset(String key, Map<String, String> map, long ttlSeconds) {
++        stringRedisTemplate.opsForHash().putAll(key, map);
++        if (ttlSeconds > 0) {
++            stringRedisTemplate.expire(key, ttlSeconds, TimeUnit.SECONDS);
++        }
++    }
++
++    public Long hdel(String key, String... hashKeys) {
++        return stringRedisTemplate.opsForHash().delete(key, (Object[]) hashKeys);
++    }
++
++    public Boolean hhasKey(String key, String hashKey) {
++        return stringRedisTemplate.opsForHash().hasKey(key, hashKey);
++    }
++
++    public List<String> scanKeys(String pattern) {
++        List<String> keys = new ArrayList<>();
++        ScanOptions options = ScanOptions.scanOptions().match(pattern).count(100).build();
++        Cursor<String> cursor = stringRedisTemplate.scan(options);
++        while (cursor.hasNext()) {
++            keys.add(cursor.next());
++        }
++        try {
++            cursor.close();
++        } catch (Exception ignore) {
++        }
++        return keys;
++    }
++
++    public void saveSmsFailedRecord(String phone, String templateCode, String carrierReturnCode,
++                                     String exceptionSummary, int retryCount, long ttlSeconds) {
++        String key = "sms:failed:" + phone;
++        stringRedisTemplate.opsForHash().put(key, "phone", phone);
++        stringRedisTemplate.opsForHash().put(key, "templateCode", templateCode != null ? templateCode : "");
++        stringRedisTemplate.opsForHash().put(key, "carrierReturnCode", carrierReturnCode != null ? carrierReturnCode : "");
++        stringRedisTemplate.opsForHash().put(key, "exceptionSummary", exceptionSummary != null ? exceptionSummary : "");
++        stringRedisTemplate.opsForHash().put(key, "retryCount", String.valueOf(retryCount));
++        stringRedisTemplate.opsForHash().put(key, "createTime", String.valueOf(System.currentTimeMillis()));
++        if (ttlSeconds > 0) {
++            stringRedisTemplate.expire(key, ttlSeconds, TimeUnit.SECONDS);
++        }
++    }
++
++    public void saveSmsFailedRecord(String phone, Integer type, String templateCode, String carrierReturnCode,
++                                     String exceptionSummary, int retryCount, long ttlSeconds) {
++        String key = "sms:failed:" + phone;
++        stringRedisTemplate.opsForHash().put(key, "phone", phone);
++        stringRedisTemplate.opsForHash().put(key, "type", type != null ? String.valueOf(type) : "");
++        stringRedisTemplate.opsForHash().put(key, "templateCode", templateCode != null ? templateCode : "");
++        stringRedisTemplate.opsForHash().put(key, "carrierReturnCode", carrierReturnCode != null ? carrierReturnCode : "");
++        stringRedisTemplate.opsForHash().put(key, "exceptionSummary", exceptionSummary != null ? exceptionSummary : "");
++        stringRedisTemplate.opsForHash().put(key, "retryCount", String.valueOf(retryCount));
++        stringRedisTemplate.opsForHash().put(key, "createTime", String.valueOf(System.currentTimeMillis()));
++        if (ttlSeconds > 0) {
++            stringRedisTemplate.expire(key, ttlSeconds, TimeUnit.SECONDS);
++        }
++    }
++
++    public Map<Object, Object> getSmsFailedRecord(String phone) {
++        String key = "sms:failed:" + phone;
++        return stringRedisTemplate.opsForHash().entries(key);
++    }
++
++    public void removeSmsFailedRecord(String phone) {
++        String key = "sms:failed:" + phone;
++        stringRedisTemplate.delete(key);
++    }
++
++    public List<Map<Object, Object>> getAllSmsFailedRecords() {
++        List<String> keys = scanKeys("sms:failed:*");
++        List<Map<Object, Object>> records = new ArrayList<>();
++        for (String key : keys) {
++            Map<Object, Object> record = stringRedisTemplate.opsForHash().entries(key);
++            if (record != null && !record.isEmpty()) {
++                records.add(record);
++            }
++        }
++        return records;
++    }
++}
+\ No newline at end of file
+diff --git a/cf-framework-parent/cf-sms/cf-sms-domain/src/main/java/com/cf/sms/domain/SmsFailedRecord.java b/cf-framework-parent/cf-sms/cf-sms-domain/src/main/java/com/cf/sms/domain/SmsFailedRecord.java
+new file mode 100644
+index 0000000..b47b21e
+--- /dev/null
++++ b/cf-framework-parent/cf-sms/cf-sms-domain/src/main/java/com/cf/sms/domain/SmsFailedRecord.java
+@@ -0,0 +1,89 @@
++package com.cf.sms.domain;
++
++import java.io.Serializable;
++
++public class SmsFailedRecord implements Serializable {
++
++    private String phone;
++    private String templateCode;
++    private String carrierReturnCode;
++    private String exceptionSummary;
++    private int retryCount;
++    private long createTime;
++
++    public static final String REDIS_KEY_PREFIX = "sms:failed:";
++    public static final String RETRY_LOCK_PREFIX = "sms:retry:lock:";
++    public static final long RETRY_LOCK_TTL_SECONDS = 600L;
++    public static final long FAILED_RECORD_TTL_SECONDS = 86400L;
++    public static final int MAX_RETRY_COUNT = 3;
++    public static final long INITIAL_BACKOFF_MS = 1000L;
++
++    public SmsFailedRecord() {
++    }
++
++    public SmsFailedRecord(String phone, String templateCode, String carrierReturnCode,
++                           String exceptionSummary, int retryCount, long createTime) {
++        this.phone = phone;
++        this.templateCode = templateCode;
++        this.carrierReturnCode = carrierReturnCode;
++        this.exceptionSummary = exceptionSummary;
++        this.retryCount = retryCount;
++        this.createTime = createTime;
++    }
++
++    public String getPhone() {
++        return phone;
++    }
++
++    public void setPhone(String phone) {
++        this.phone = phone;
++    }
++
++    public String getTemplateCode() {
++        return templateCode;
++    }
++
++    public void setTemplateCode(String templateCode) {
++        this.templateCode = templateCode;
++    }
++
++    public String getCarrierReturnCode() {
++        return carrierReturnCode;
++    }
++
++    public void setCarrierReturnCode(String carrierReturnCode) {
++        this.carrierReturnCode = carrierReturnCode;
++    }
++
++    public String getExceptionSummary() {
++        return exceptionSummary;
++    }
++
++    public void setExceptionSummary(String exceptionSummary) {
++        this.exceptionSummary = exceptionSummary;
++    }
++
++    public int getRetryCount() {
++        return retryCount;
++    }
++
++    public void setRetryCount(int retryCount) {
++        this.retryCount = retryCount;
++    }
++
++    public long getCreateTime() {
++        return createTime;
++    }
++
++    public void setCreateTime(long createTime) {
++        this.createTime = createTime;
++    }
++
++    public String buildRedisKey() {
++        return REDIS_KEY_PREFIX + this.phone;
++    }
++
++    public long nextBackoffMillis() {
++        return INITIAL_BACKOFF_MS * (1L << Math.min(retryCount, 5));
++    }
++}
+\ No newline at end of file
+diff --git a/cf-framework-parent/cf-sms/cf-sms-service/src/main/java/com/cf/sms/config/RocketMQConfig.java b/cf-framework-parent/cf-sms/cf-sms-service/src/main/java/com/cf/sms/config/RocketMQConfig.java
+new file mode 100644
+index 0000000..28dd47e
+--- /dev/null
++++ b/cf-framework-parent/cf-sms/cf-sms-service/src/main/java/com/cf/sms/config/RocketMQConfig.java
+@@ -0,0 +1,75 @@
++package com.cf.sms.config;
++
++import com.alibaba.fastjson.JSON;
++import org.apache.rocketmq.client.exception.MQClientException;
++import org.apache.rocketmq.client.producer.DefaultMQProducer;
++import org.apache.rocketmq.client.producer.SendCallback;
++import org.apache.rocketmq.client.producer.SendResult;
++import org.apache.rocketmq.common.message.Message;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
++import org.springframework.beans.factory.annotation.Value;
++import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
++import org.springframework.context.annotation.Bean;
++import org.springframework.context.annotation.Configuration;
++
++import javax.annotation.PreDestroy;
++import java.nio.charset.StandardCharsets;
++
++@Configuration
++@ConditionalOnProperty(prefix = "rocketmq", name = "name-server")
++public class RocketMQConfig {
++
++    private static final Logger log = LoggerFactory.getLogger(RocketMQConfig.class);
++
++    @Value("${rocketmq.name-server}")
++    private String nameServer;
++
++    @Value("${rocketmq.producer.group:cf-sms-producer-group}")
++    private String producerGroup;
++
++    private DefaultMQProducer producer;
++
++    @Bean
++    public DefaultMQProducer defaultMQProducer() throws MQClientException {
++        producer = new DefaultMQProducer(producerGroup);
++        producer.setNamesrvAddr(nameServer);
++        producer.setSendMsgTimeout(5000);
++        producer.setRetryTimesWhenSendAsyncFailed(2);
++        producer.start();
++        log.info("RocketMQ producer started, nameServer={}, group={}", nameServer, producerGroup);
++        return producer;
++    }
++
++    public void sendSmsEventAsync(String topic, String tags, Object messageBody) {
++        if (producer == null) {
++            log.warn("RocketMQ producer not initialized, skip sending message to topic={}", topic);
++            return;
++        }
++        try {
++            String jsonBody = JSON.toJSONString(messageBody);
++            Message msg = new Message(topic, tags, jsonBody.getBytes(StandardCharsets.UTF_8));
++            producer.send(msg, new SendCallback() {
++                @Override
++                public void onSuccess(SendResult sendResult) {
++                    log.debug("RocketMQ send success, topic={}, msgId={}", topic, sendResult.getMsgId());
++                }
++
++                @Override
++                public void onException(Throwable e) {
++                    log.error("RocketMQ send failed, topic={}", topic, e);
++                }
++            });
++        } catch (Exception e) {
++            log.error("RocketMQ send exception, topic={}", topic, e);
++        }
++    }
++
++    @PreDestroy
++    public void destroy() {
++        if (producer != null) {
++            producer.shutdown();
++            log.info("RocketMQ producer shutdown");
++        }
++    }
++}
+\ No newline at end of file
+diff --git a/cf-framework-parent/cf-sms/cf-sms-service/src/main/java/com/cf/sms/task/SmsRetryTask.java b/cf-framework-parent/cf-sms/cf-sms-service/src/main/java/com/cf/sms/task/SmsRetryTask.java
+new file mode 100644
+index 0000000..ccdf8ed
+--- /dev/null
++++ b/cf-framework-parent/cf-sms/cf-sms-service/src/main/java/com/cf/sms/task/SmsRetryTask.java
+@@ -0,0 +1,130 @@
++package com.cf.sms.task;
++
++import com.cf.framework.utils.RedisUtils;
++import com.cf.sms.dao.mapper.CfSmsMapper;
++import com.cf.sms.domain.CfSms;
++import com.cf.sms.domain.SmsFailedRecord;
++import com.cf.sms.service.SmsService;
++import com.cf.ucenter.domain.CfWeixinConfig;
++import com.cf.ucenter.service.CfWeixinConfigService;
++import com.cf.ucenter.wxtools.WeiXinConfigUtils;
++import org.apache.dubbo.config.annotation.Reference;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.scheduling.annotation.Scheduled;
++import org.springframework.stereotype.Component;
++
++import java.util.List;
++import java.util.Map;
++
++@Component
++public class SmsRetryTask {
++
++    private static final Logger log = LoggerFactory.getLogger(SmsRetryTask.class);
++
++    @Autowired
++    private RedisUtils redisUtils;
++
++    @Autowired
++    private CfSmsMapper cfSmsMapper;
++
++    @Reference(version = "1.0.0", retries = 0, timeout = 5000, check = false)
++    private SmsService smsService;
++
++    @Reference(version = "1.0.0", retries = 0, timeout = 5000, check = false)
++    private CfWeixinConfigService cfWeixinConfigService;
++
++    @Scheduled(fixedDelay = 60000)
++    public void retryFailedSms() {
++        log.info("SmsRetryTask start scanning failed SMS records");
++        List<Map<Object, Object>> failedRecords = redisUtils.getAllSmsFailedRecords();
++        if (failedRecords == null || failedRecords.isEmpty()) {
++            return;
++        }
++
++        for (Map<Object, Object> record : failedRecords) {
++            processFailedRecord(record);
++        }
++        log.info("SmsRetryTask completed, processed {} failed records", failedRecords.size());
++    }
++
++    private void processFailedRecord(Map<Object, Object> record) {
++        String phone = getString(record, "phone");
++        if (phone == null || phone.isEmpty()) {
++            return;
++        }
++
++        String lockKey = SmsFailedRecord.RETRY_LOCK_PREFIX + phone;
++        Boolean lockAcquired = redisUtils.setnx(lockKey, "1", SmsFailedRecord.RETRY_LOCK_TTL_SECONDS);
++        if (lockAcquired == null || !lockAcquired) {
++            log.debug("SmsRetryTask skip phone={}, already locked by another node", phone);
++            return;
++        }
++
++        try {
++            String templateCode = getString(record, "templateCode");
++            int retryCount = getInt(record, "retryCount");
++            Integer type = getInt(record, "type");
++            long createTime = getLong(record, "createTime");
++
++            long recordAgeMs = System.currentTimeMillis() - createTime;
++            long halfLockTtlMs = SmsFailedRecord.RETRY_LOCK_TTL_SECONDS * 1000 / 2;
++            if (recordAgeMs < halfLockTtlMs && retryCount >= SmsFailedRecord.MAX_RETRY_COUNT) {
++                log.info("SmsRetryTask skip phone={}, retryCount={} already at max, record age={}ms", phone, retryCount, recordAgeMs);
++                return;
++            }
++
++            List<CfWeixinConfig> cfWeixinConfigs = cfWeixinConfigService.getWeiXinLoginConfigragtion("ali_sms");
++            String signName = WeiXinConfigUtils.getWeiXinConfigragtionByEnName("sign_name", cfWeixinConfigs);
++            String tmplCode = StringUtilsNotEmpty(templateCode) ? templateCode
++                    : WeiXinConfigUtils.getWeiXinConfigragtionByEnName("template_code", cfWeixinConfigs);
++            String regionId = WeiXinConfigUtils.getWeiXinConfigragtionByEnName("region_id", cfWeixinConfigs);
++            String accessKeyId = WeiXinConfigUtils.getWeiXinConfigragtionByEnName("access_key_id", cfWeixinConfigs);
++            String secret = WeiXinConfigUtils.getWeiXinConfigragtionByEnName("secret", cfWeixinConfigs);
++
++            cfSmsMapper.updateStatusByPhoneAndType(phone, type, CfSms.SMS_STATUS_RETRYING);
++
++            String code = (int)((Math.random()*9+1)*100000)+"";
++            String templateParam = "{\"code\":\"" + code + "\"}";
++
++            boolean success = smsService.sendSmsByAliWithRetry(phone, templateParam, signName, tmplCode,
++                    regionId, accessKeyId, secret, "", "", type);
++
++            if (success) {
++                redisUtils.removeSmsFailedRecord(phone);
++                cfSmsMapper.updateStatusByPhoneAndType(phone, type, CfSms.SMS_STATUS_SENT);
++                log.info("SmsRetryTask retry success for phone={}, type={}", phone, type);
++            }
++        } catch (Exception e) {
++            log.error("SmsRetryTask retry failed for phone={}", phone, e);
++        }
++    }
++
++    private boolean StringUtilsNotEmpty(String str) {
++        return str != null && !str.isEmpty();
++    }
++
++    private String getString(Map<Object, Object> map, String key) {
++        Object val = map.get(key);
++        return val != null ? val.toString() : "";
++    }
++
++    private int getInt(Map<Object, Object> map, String key) {
++        try {
++            Object val = map.get(key);
++            return val != null ? Integer.parseInt(val.toString()) : 0;
++        } catch (NumberFormatException e) {
++            return 0;
++        }
++    }
++
++    private long getLong(Map<Object, Object> map, String key) {
++        try {
++            Object val = map.get(key);
++            return val != null ? Long.parseLong(val.toString()) : 0L;
++        } catch (NumberFormatException e) {
++            return 0L;
++        }
++    }
++}
+\ No newline at end of file
