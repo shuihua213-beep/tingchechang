@@ -42,7 +42,6 @@ public class CfAdLinksServiceImpl implements CfAdLinksService {
         if(cfAdLinks.getCarrierIds()==null || cfAdLinks.getCarrierIds().size()==0 || StringUtils.isEmpty(cfAdLinks.getAdId())){
             return null;
         }
-        //先清除掉原来的
         CfAdLinksQuery cfAdLinksQuery = new CfAdLinksQuery();
         cfAdLinksQuery.setAdId(cfAdLinks.getAdId());
         cfAdLinksQuery.setScenes(cfAdLinks.getScenes());
@@ -57,7 +56,6 @@ public class CfAdLinksServiceImpl implements CfAdLinksService {
         if(cfAdList==null || cfAdList.size()==0){
             ExceptionCast.cast(AdCode.AD_NOT_EXIST);
         }
-        //批量添加
         for (String carrierId: cfAdLinks.getCarrierIds()){
             cfAdLinks.setCarrierId(carrierId);
             cfAdLinks.setPlatform(cfAdList.get(0).getPlatform());
@@ -111,6 +109,9 @@ public class CfAdLinksServiceImpl implements CfAdLinksService {
 
     @Override
     public CfAdLinksExample getExampleByQuery(CfAdLinksQuery cfAdLinksQuery) {
+        if(cfAdLinksQuery == null){
+            cfAdLinksQuery = new CfAdLinksQuery();
+        }
         CfAdLinksExample cfAdLinksExample = new CfAdLinksExample();
         CfAdLinksExample.Criteria criteria = cfAdLinksExample.createCriteria();
         if(cfAdLinksQuery.getId()!=null){
@@ -155,18 +156,24 @@ public class CfAdLinksServiceImpl implements CfAdLinksService {
 
     @Override
     public List<CfAdLinks> getListByQuery(CfAdLinksQuery cfAdLinksQuery) {
-        return cfAdLinksMapper.selectByExample(getExampleByQuery(cfAdLinksQuery));
+        CfAdLinksQuery query = cfAdLinksQuery == null ? new CfAdLinksQuery() : cfAdLinksQuery;
+        query.handlePageParam();
+        return cfAdLinksMapper.selectByExample(getExampleByQuery(query));
     }
 
     @Override
     public List<CfAdLinks> selectContainAdByQuery(CfAdLinksQuery cfAdLinksQuery) {
-        return cfAdLinksMapper.selectContainAdByQuery(cfAdLinksQuery);
+        CfAdLinksQuery query = cfAdLinksQuery == null ? new CfAdLinksQuery() : cfAdLinksQuery;
+        query.handlePageParam();
+        return cfAdLinksMapper.selectContainAdByQuery(query);
     }
 
     @Override
     public Integer countByQuery(CfAdLinksQuery cfAdLinksQuery) {
-        cfAdLinksQuery.setPage(null);
-        return cfAdLinksMapper.countByExample(getExampleByQuery(cfAdLinksQuery));
+        CfAdLinksQuery query = cfAdLinksQuery == null ? new CfAdLinksQuery() : cfAdLinksQuery;
+        query.setPage(null);
+        query.setSize(null);
+        return cfAdLinksMapper.countByExample(getExampleByQuery(query));
     }
 
     @Override

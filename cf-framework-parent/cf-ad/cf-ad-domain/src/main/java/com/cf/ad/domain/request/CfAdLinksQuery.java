@@ -42,6 +42,10 @@ public class CfAdLinksQuery implements Serializable {
 
     private String orderBy;
 
+    private static final int DEFAULT_PAGE_NUM = 1;
+
+    private static final int DEFAULT_PAGE_SIZE = 10;
+
     private static final long serialVersionUID = 1L;
 
     public String getId() {
@@ -138,6 +142,31 @@ public class CfAdLinksQuery implements Serializable {
 
     public void setSize(Integer size) {
         this.size = size;
+    }
+
+    public Integer getPageNum() {
+        return page;
+    }
+
+    public void setPageNum(Integer pageNum) {
+        this.page = pageNum;
+    }
+
+    public Integer getPageSize() {
+        return size;
+    }
+
+    public void setPageSize(Integer pageSize) {
+        this.size = pageSize;
+    }
+
+    public void handlePageParam() {
+        if(page == null || page <= 0) {
+            page = DEFAULT_PAGE_NUM;
+        }
+        if(size == null || size <= 0) {
+            size = DEFAULT_PAGE_SIZE;
+        }
     }
 
     public String getOrderBy() {

@@ -1,0 +1,128 @@
+diff --git a/cf-framework-parent/cf-ad/cf-ad-admin/src/main/java/com/cf/ad/admin/controller/CfAdLinksController.java b/cf-framework-parent/cf-ad/cf-ad-admin/src/main/java/com/cf/ad/admin/controller/CfAdLinksController.java
+index 068a8ac..b2b9b45 100644
+--- a/cf-framework-parent/cf-ad/cf-ad-admin/src/main/java/com/cf/ad/admin/controller/CfAdLinksController.java
++++ b/cf-framework-parent/cf-ad/cf-ad-admin/src/main/java/com/cf/ad/admin/controller/CfAdLinksController.java
+@@ -41,6 +41,10 @@ public class CfAdLinksController implements CfAdLinkersSwagger {
+     @Override
+     @RequestMapping(value = "getListByQuery", method = RequestMethod.GET)
+     public ResponseResult getListByQuery(CfAdLinksQuery cfAdLinksQuery) throws Exception {
++        if(cfAdLinksQuery == null){
++            cfAdLinksQuery = new CfAdLinksQuery();
++        }
++        cfAdLinksQuery.handlePageParam();
+         List<CfAdLinks> cfAdLinks = cfAdLinksService.getListByQuery(cfAdLinksQuery);
+         if(cfAdLinks==null || cfAdLinks.size()==0){
+             return new ResponseResult(CommonCode.NO_MORE_DATAS);
+diff --git a/cf-framework-parent/cf-ad/cf-ad-domain/src/main/java/com/cf/ad/domain/request/CfAdLinksQuery.java b/cf-framework-parent/cf-ad/cf-ad-domain/src/main/java/com/cf/ad/domain/request/CfAdLinksQuery.java
+index b9202ae..989b637 100644
+--- a/cf-framework-parent/cf-ad/cf-ad-domain/src/main/java/com/cf/ad/domain/request/CfAdLinksQuery.java
++++ b/cf-framework-parent/cf-ad/cf-ad-domain/src/main/java/com/cf/ad/domain/request/CfAdLinksQuery.java
+@@ -42,6 +42,10 @@ public class CfAdLinksQuery implements Serializable {
+ 
+     private String orderBy;
+ 
++    private static final int DEFAULT_PAGE_NUM = 1;
++
++    private static final int DEFAULT_PAGE_SIZE = 10;
++
+     private static final long serialVersionUID = 1L;
+ 
+     public String getId() {
+@@ -140,6 +144,31 @@ public class CfAdLinksQuery implements Serializable {
+         this.size = size;
+     }
+ 
++    public Integer getPageNum() {
++        return page;
++    }
++
++    public void setPageNum(Integer pageNum) {
++        this.page = pageNum;
++    }
++
++    public Integer getPageSize() {
++        return size;
++    }
++
++    public void setPageSize(Integer pageSize) {
++        this.size = pageSize;
++    }
++
++    public void handlePageParam() {
++        if(page == null || page <= 0) {
++            page = DEFAULT_PAGE_NUM;
++        }
++        if(size == null || size <= 0) {
++            size = DEFAULT_PAGE_SIZE;
++        }
++    }
++
+     public String getOrderBy() {
+         return orderBy;
+     }
+@@ -195,4 +224,4 @@ public class CfAdLinksQuery implements Serializable {
+     public void setCarrierIds(List<String> carrierIds) {
+         this.carrierIds = carrierIds;
+     }
+-}
+\ No newline at end of file
++}
+diff --git a/cf-framework-parent/cf-ad/cf-ad-service/src/main/java/com/cf/ad/service/impl/CfAdLinksServiceImpl.java b/cf-framework-parent/cf-ad/cf-ad-service/src/main/java/com/cf/ad/service/impl/CfAdLinksServiceImpl.java
+index c8d668b..70dca87 100644
+--- a/cf-framework-parent/cf-ad/cf-ad-service/src/main/java/com/cf/ad/service/impl/CfAdLinksServiceImpl.java
++++ b/cf-framework-parent/cf-ad/cf-ad-service/src/main/java/com/cf/ad/service/impl/CfAdLinksServiceImpl.java
+@@ -42,7 +42,6 @@ public class CfAdLinksServiceImpl implements CfAdLinksService {
+         if(cfAdLinks.getCarrierIds()==null || cfAdLinks.getCarrierIds().size()==0 || StringUtils.isEmpty(cfAdLinks.getAdId())){
+             return null;
+         }
+-        //先清除掉原来的
+         CfAdLinksQuery cfAdLinksQuery = new CfAdLinksQuery();
+         cfAdLinksQuery.setAdId(cfAdLinks.getAdId());
+         cfAdLinksQuery.setScenes(cfAdLinks.getScenes());
+@@ -57,7 +56,6 @@ public class CfAdLinksServiceImpl implements CfAdLinksService {
+         if(cfAdList==null || cfAdList.size()==0){
+             ExceptionCast.cast(AdCode.AD_NOT_EXIST);
+         }
+-        //批量添加
+         for (String carrierId: cfAdLinks.getCarrierIds()){
+             cfAdLinks.setCarrierId(carrierId);
+             cfAdLinks.setPlatform(cfAdList.get(0).getPlatform());
+@@ -111,6 +109,9 @@ public class CfAdLinksServiceImpl implements CfAdLinksService {
+ 
+     @Override
+     public CfAdLinksExample getExampleByQuery(CfAdLinksQuery cfAdLinksQuery) {
++        if(cfAdLinksQuery == null){
++            cfAdLinksQuery = new CfAdLinksQuery();
++        }
+         CfAdLinksExample cfAdLinksExample = new CfAdLinksExample();
+         CfAdLinksExample.Criteria criteria = cfAdLinksExample.createCriteria();
+         if(cfAdLinksQuery.getId()!=null){
+@@ -155,18 +156,24 @@ public class CfAdLinksServiceImpl implements CfAdLinksService {
+ 
+     @Override
+     public List<CfAdLinks> getListByQuery(CfAdLinksQuery cfAdLinksQuery) {
+-        return cfAdLinksMapper.selectByExample(getExampleByQuery(cfAdLinksQuery));
++        CfAdLinksQuery query = cfAdLinksQuery == null ? new CfAdLinksQuery() : cfAdLinksQuery;
++        query.handlePageParam();
++        return cfAdLinksMapper.selectByExample(getExampleByQuery(query));
+     }
+ 
+     @Override
+     public List<CfAdLinks> selectContainAdByQuery(CfAdLinksQuery cfAdLinksQuery) {
+-        return cfAdLinksMapper.selectContainAdByQuery(cfAdLinksQuery);
++        CfAdLinksQuery query = cfAdLinksQuery == null ? new CfAdLinksQuery() : cfAdLinksQuery;
++        query.handlePageParam();
++        return cfAdLinksMapper.selectContainAdByQuery(query);
+     }
+ 
+     @Override
+     public Integer countByQuery(CfAdLinksQuery cfAdLinksQuery) {
+-        cfAdLinksQuery.setPage(null);
+-        return cfAdLinksMapper.countByExample(getExampleByQuery(cfAdLinksQuery));
++        CfAdLinksQuery query = cfAdLinksQuery == null ? new CfAdLinksQuery() : cfAdLinksQuery;
++        query.setPage(null);
++        query.setSize(null);
++        return cfAdLinksMapper.countByExample(getExampleByQuery(query));
+     }
+ 
+     @Override
