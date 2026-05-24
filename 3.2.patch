@@ -1,0 +1,219 @@
+diff --git a/cf-framework-parent/cf-sms/cf-sms-service/src/main/java/com/cf/sms/service/config/AsyncTaskConfig.java b/cf-framework-parent/cf-sms/cf-sms-service/src/main/java/com/cf/sms/service/config/AsyncTaskConfig.java
+new file mode 100644
+index 0000000..228cf89
+--- /dev/null
++++ b/cf-framework-parent/cf-sms/cf-sms-service/src/main/java/com/cf/sms/service/config/AsyncTaskConfig.java
+@@ -0,0 +1,42 @@
++package com.cf.sms.service.config;
++
++import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
++import org.springframework.context.annotation.Bean;
++import org.springframework.context.annotation.Configuration;
++import org.springframework.scheduling.annotation.AsyncConfigurer;
++import org.springframework.scheduling.annotation.EnableScheduling;
++import org.springframework.scheduling.annotation.SchedulingConfigurer;
++import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
++import org.springframework.scheduling.config.ScheduledTaskRegistrar;
++
++import java.util.concurrent.Executor;
++
++@Configuration
++@EnableScheduling
++public class AsyncTaskConfig implements SchedulingConfigurer, AsyncConfigurer {
++
++    private int corePoolSize = 5;
++
++    @Bean
++    public ThreadPoolTaskScheduler taskScheduler() {
++        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
++        scheduler.initialize();
++        scheduler.setPoolSize(corePoolSize);
++        return scheduler;
++    }
++
++    @Override
++    public Executor getAsyncExecutor() {
++        return taskScheduler();
++    }
++
++    @Override
++    public AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
++        return null;
++    }
++
++    @Override
++    public void configureTasks(ScheduledTaskRegistrar scheduledTaskRegistrar) {
++        scheduledTaskRegistrar.setTaskScheduler(taskScheduler());
++    }
++}
+diff --git a/cf-framework-parent/cf-sms/cf-sms-service/src/main/java/com/cf/sms/service/utils/RedisUtils.java b/cf-framework-parent/cf-sms/cf-sms-service/src/main/java/com/cf/sms/service/utils/RedisUtils.java
+new file mode 100644
+index 0000000..3304254
+--- /dev/null
++++ b/cf-framework-parent/cf-sms/cf-sms-service/src/main/java/com/cf/sms/service/utils/RedisUtils.java
+@@ -0,0 +1,91 @@
++package com.cf.sms.service.utils;
++
++import org.apache.commons.lang3.StringUtils;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.data.redis.core.StringRedisTemplate;
++import org.springframework.stereotype.Component;
++
++import java.util.Collections;
++import java.util.HashMap;
++import java.util.Map;
++import java.util.Set;
++import java.util.concurrent.TimeUnit;
++
++@Component
++public class RedisUtils {
++
++    @Autowired
++    private StringRedisTemplate stringRedisTemplate;
++
++    public void putAll(String key, Map<String, String> values, long timeout, TimeUnit timeUnit) {
++        if (StringUtils.isBlank(key) || values == null || values.isEmpty()) {
++            return;
++        }
++        stringRedisTemplate.opsForHash().putAll(key, values);
++        if (timeout > 0) {
++            stringRedisTemplate.expire(key, timeout, timeUnit);
++        }
++    }
++
++    public Map<String, String> entries(String key) {
++        if (StringUtils.isBlank(key)) {
++            return Collections.emptyMap();
++        }
++        Map<Object, Object> entries = stringRedisTemplate.opsForHash().entries(key);
++        if (entries == null || entries.isEmpty()) {
++            return Collections.emptyMap();
++        }
++        Map<String, String> result = new HashMap<String, String>();
++        for (Map.Entry<Object, Object> entry : entries.entrySet()) {
++            result.put(String.valueOf(entry.getKey()), entry.getValue() == null ? "" : String.valueOf(entry.getValue()));
++        }
++        return result;
++    }
++
++    public Boolean tryLock(String key, String value, long timeout, TimeUnit timeUnit) {
++        if (StringUtils.isBlank(key)) {
++            return false;
++        }
++        return stringRedisTemplate.opsForValue().setIfAbsent(key, value == null ? "" : value, timeout, timeUnit);
++    }
++
++    public void addToSet(String key, String value, long timeout, TimeUnit timeUnit) {
++        if (StringUtils.isBlank(key) || StringUtils.isBlank(value)) {
++            return;
++        }
++        stringRedisTemplate.opsForSet().add(key, value);
++        if (timeout > 0) {
++            stringRedisTemplate.expire(key, timeout, timeUnit);
++        }
++    }
++
++    public Set<String> members(String key) {
++        if (StringUtils.isBlank(key)) {
++            return Collections.emptySet();
++        }
++        Set<String> members = stringRedisTemplate.opsForSet().members(key);
++        return members == null ? Collections.<String>emptySet() : members;
++    }
++
++    public void removeFromSet(String key, String value) {
++        if (StringUtils.isBlank(key) || StringUtils.isBlank(value)) {
++            return;
++        }
++        stringRedisTemplate.opsForSet().remove(key, value);
++    }
++
++    public void delete(String key) {
++        if (StringUtils.isBlank(key)) {
++            return;
++        }
++        stringRedisTemplate.delete(key);
++    }
++
++    public boolean hasKey(String key) {
++        if (StringUtils.isBlank(key)) {
++            return false;
++        }
++        Boolean hasKey = stringRedisTemplate.hasKey(key);
++        return hasKey != null && hasKey;
++    }
++}
+diff --git a/cf-framework-parent/cf-sms/cf-sms-service/src/main/java/com/cf/sms/task/SmsRetryTask.java b/cf-framework-parent/cf-sms/cf-sms-service/src/main/java/com/cf/sms/task/SmsRetryTask.java
+new file mode 100644
+index 0000000..232fe89
+--- /dev/null
++++ b/cf-framework-parent/cf-sms/cf-sms-service/src/main/java/com/cf/sms/task/SmsRetryTask.java
+@@ -0,0 +1,68 @@
++package com.cf.sms.task;
++
++import com.cf.sms.service.impl.SmsServiceImpl;
++import com.cf.sms.service.utils.RedisUtils;
++import org.apache.commons.lang3.StringUtils;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.scheduling.annotation.Scheduled;
++import org.springframework.stereotype.Component;
++
++import java.util.Map;
++import java.util.Set;
++import java.util.UUID;
++import java.util.concurrent.TimeUnit;
++
++@Component
++public class SmsRetryTask {
++
++    private static final long RECORD_LOCK_MINUTES = 5L;
++    private static final long PHONE_COMPENSATE_LIMIT_MINUTES = 10L;
++
++    @Autowired
++    private RedisUtils redisUtils;
++    @Autowired
++    private SmsServiceImpl smsService;
++
++    private final String instanceId = UUID.randomUUID().toString();
++
++    @Scheduled(cron = "0 0/1 * * * *")
++    public void retryFailedSms() {
++        Set<String> failureRecordKeys = redisUtils.members(SmsServiceImpl.SMS_FAILURE_INDEX_KEY);
++        if (failureRecordKeys == null || failureRecordKeys.isEmpty()) {
++            return;
++        }
++        for (String failureRecordKey : failureRecordKeys) {
++            if (StringUtils.isBlank(failureRecordKey)) {
++                continue;
++            }
++            Map<String, String> failureRecord = redisUtils.entries(failureRecordKey);
++            if (failureRecord == null || failureRecord.isEmpty()) {
++                redisUtils.removeFromSet(SmsServiceImpl.SMS_FAILURE_INDEX_KEY, failureRecordKey);
++                continue;
++            }
++            String smsId = failureRecord.get("smsId");
++            String phone = failureRecord.get("phone");
++            if (StringUtils.isAnyBlank(smsId, phone)) {
++                smsService.clearFailureRecord(failureRecordKey);
++                continue;
++            }
++            String recordLockKey = SmsServiceImpl.SMS_FAILURE_LOCK_PREFIX + smsId;
++            Boolean lockResult = redisUtils.tryLock(recordLockKey, instanceId, RECORD_LOCK_MINUTES, TimeUnit.MINUTES);
++            if (lockResult == null || !lockResult) {
++                continue;
++            }
++            try {
++                String phoneLimitKey = SmsServiceImpl.SMS_PHONE_COMPENSATE_LIMIT_PREFIX + phone;
++                Boolean phoneLockResult = redisUtils.tryLock(phoneLimitKey, smsId, PHONE_COMPENSATE_LIMIT_MINUTES, TimeUnit.MINUTES);
++                if (phoneLockResult == null || !phoneLockResult) {
++                    continue;
++                }
++                smsService.retryFailedSms(failureRecordKey, failureRecord);
++            } catch (Exception e) {
++                e.printStackTrace();
++            } finally {
++                redisUtils.delete(recordLockKey);
++            }
++        }
++    }
++}

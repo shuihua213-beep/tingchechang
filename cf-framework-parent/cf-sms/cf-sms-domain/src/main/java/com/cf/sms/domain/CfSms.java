@@ -4,11 +4,14 @@ import java.io.Serializable;
 
 public class CfSms implements Serializable {
 
-    final public static Integer SMS_TYPE_REGISTER = 1;
-    final public static Integer SMS_TYPE_IDENTITY = 2;
-    final public static Integer SMS_TYPE_NOTICE = 3;
-    final public static Long SMS_SEND_FREQUENTLY_LIMIT_TIME = 60000L;  //短信发送间隔时间(限制频繁发送)
-    final public static Long SMS_CODE_VALID_TIME = 300000L;  //短信验证码有效时间
+    public static final Integer SMS_TYPE_REGISTER = 1;
+    public static final Integer SMS_TYPE_IDENTITY = 2;
+    public static final Integer SMS_TYPE_NOTICE = 3;
+    public static final Integer SMS_STATUS_UNUSED = 0;
+    public static final Integer SMS_STATUS_USED = 1;
+    public static final Integer SMS_STATUS_PENDING = 2;
+    public static final Long SMS_SEND_FREQUENTLY_LIMIT_TIME = 60000L;
+    public static final Long SMS_CODE_VALID_TIME = 300000L;
 
     private String id;
 

@@ -29,11 +29,14 @@ public interface CfSmsMapper {
 
     int updateByPrimaryKey(CfSms record);
 
-    List<CfSms> getLastSendLog(@Param("phone")String phone,@Param("type") Integer type);
+    List<CfSms> getLastSendLog(@Param("phone") String phone, @Param("type") Integer type);
 
-    List<CfSms> getLastValidSmsCode(@Param("phone") String phone,@Param("code") String code,
-                                      @Param("type") Integer type,@Param("create_time") Long createTime);
+    List<CfSms> getLastValidSmsCode(@Param("phone") String phone, @Param("code") String code,
+                                    @Param("type") Integer type, @Param("create_time") Long createTime);
 
-    int updateLastValidSmsCodeStatus(@Param("phone") String phone,@Param("code") String code,
-                                     @Param("type") Integer type,@Param("currentTime") Long currentTime);
+    int updateLastValidSmsCodeStatus(@Param("phone") String phone, @Param("code") String code,
+                                     @Param("type") Integer type, @Param("currentTime") Long currentTime);
+
+    int updateSmsStatus(@Param("id") String id, @Param("sourceStatus") Integer sourceStatus,
+                        @Param("targetStatus") Integer targetStatus);
 }

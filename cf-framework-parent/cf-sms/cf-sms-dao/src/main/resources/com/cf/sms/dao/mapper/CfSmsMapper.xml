@@ -6,7 +6,7 @@
     <result column="phone" property="phone" jdbcType="VARCHAR" />
     <result column="code" property="code" jdbcType="VARCHAR" />
     <result column="type" property="type" jdbcType="TINYINT" />
-    <result column="status" property="status" jdbcType="BIT" />
+    <result column="status" property="status" jdbcType="TINYINT" />
     <result column="create_time" property="createTime" jdbcType="BIGINT" />
     <result column="expire_time" property="expireTime" jdbcType="BIGINT" />
   </resultMap>
@@ -113,7 +113,7 @@
       type, status, create_time, 
       expire_time)
     values (#{id,jdbcType=VARCHAR}, #{phone,jdbcType=VARCHAR}, #{code,jdbcType=VARCHAR}, 
-      #{type,jdbcType=TINYINT}, #{status,jdbcType=BIT}, #{createTime,jdbcType=BIGINT}, 
+      #{type,jdbcType=TINYINT}, #{status,jdbcType=TINYINT}, #{createTime,jdbcType=BIGINT}, 
       #{expireTime,jdbcType=BIGINT})
   </insert>
   <insert id="insertSelective" parameterType="com.cf.sms.domain.CfSms" >
@@ -155,7 +155,7 @@
         #{type,jdbcType=TINYINT},
       </if>
       <if test="status != null" >
-        #{status,jdbcType=BIT},
+        #{status,jdbcType=TINYINT},
       </if>
       <if test="createTime != null" >
         #{createTime,jdbcType=BIGINT},
@@ -187,7 +187,7 @@
         type = #{record.type,jdbcType=TINYINT},
       </if>
       <if test="record.status != null" >
-        status = #{record.status,jdbcType=BIT},
+        status = #{record.status,jdbcType=TINYINT},
       </if>
       <if test="record.createTime != null" >
         create_time = #{record.createTime,jdbcType=BIGINT},
@@ -206,7 +206,7 @@
       phone = #{record.phone,jdbcType=VARCHAR},
       code = #{record.code,jdbcType=VARCHAR},
       type = #{record.type,jdbcType=TINYINT},
-      status = #{record.status,jdbcType=BIT},
+      status = #{record.status,jdbcType=TINYINT},
       create_time = #{record.createTime,jdbcType=BIGINT},
       expire_time = #{record.expireTime,jdbcType=BIGINT}
     <if test="_parameter != null" >
@@ -226,7 +226,7 @@
         type = #{type,jdbcType=TINYINT},
       </if>
       <if test="status != null" >
-        status = #{status,jdbcType=BIT},
+        status = #{status,jdbcType=TINYINT},
       </if>
       <if test="createTime != null" >
         create_time = #{createTime,jdbcType=BIGINT},
@@ -242,7 +242,7 @@
     set phone = #{phone,jdbcType=VARCHAR},
       code = #{code,jdbcType=VARCHAR},
       type = #{type,jdbcType=TINYINT},
-      status = #{status,jdbcType=BIT},
+      status = #{status,jdbcType=TINYINT},
       create_time = #{createTime,jdbcType=BIGINT},
       expire_time = #{expireTime,jdbcType=BIGINT}
     where id = #{id,jdbcType=VARCHAR}
@@ -250,5 +250,9 @@
   <update id="updateLastValidSmsCodeStatus" >
     update cf_sms set status = 1 where phone = #{phone,jdbcType=VARCHAR} and code = #{code,jdbcType=VARCHAR}
     and type = #{type,jdbcType=INTEGER} and status = 0 and expire_time > #{currentTime,jdbcType=BIGINT}
+  </update>
+  <update id="updateSmsStatus" >
+    update cf_sms set status = #{targetStatus,jdbcType=INTEGER}
+    where id = #{id,jdbcType=VARCHAR} and status = #{sourceStatus,jdbcType=INTEGER}
   </update>
 </mapper>
