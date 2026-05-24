@@ -1,0 +1,284 @@
+diff --git a/cf-framework-parent/cf-framework-utils/src/main/java/com/cf/framework/utils/RedisUtils.java b/cf-framework-parent/cf-framework-utils/src/main/java/com/cf/framework/utils/RedisUtils.java
+new file mode 100644
+index 0000000..b6a7f78
+--- /dev/null
++++ b/cf-framework-parent/cf-framework-utils/src/main/java/com/cf/framework/utils/RedisUtils.java
+@@ -0,0 +1,115 @@
++package com.cf.framework.utils;
++
++import com.alibaba.fastjson.JSON;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.data.redis.core.StringRedisTemplate;
++import org.springframework.stereotype.Component;
++
++import java.util.Set;
++import java.util.concurrent.TimeUnit;
++
++@Component
++public class RedisUtils {
++
++    @Autowired
++    private StringRedisTemplate stringRedisTemplate;
++
++    private static final String SMS_RETRY_RECORD_PREFIX = "sms:retry:record:";
++    private static final String SMS_COMPENSATE_LOCK_PREFIX = "sms:compensate:lock:";
++    private static final String SMS_RETRY_SET_PREFIX = "sms:retry:set";
++    private static final long SMS_RETRY_RECORD_TTL_SECONDS = 7200L;
++    private static final long COMPENSATE_LOCK_TTL_SECONDS = 600L;
++
++    public void saveSmsRetryRecord(String smsId, String phone, String templateCode, String errorCode, String errorStack, int retryCount) {
++        String key = SMS_RETRY_RECORD_PREFIX + smsId;
++        SmsRetryRecord record = new SmsRetryRecord(phone, smsId, templateCode, errorCode, errorStack, retryCount, System.currentTimeMillis());
++        String json = JSON.toJSONString(record);
++        stringRedisTemplate.opsForValue().set(key, json, SMS_RETRY_RECORD_TTL_SECONDS, TimeUnit.SECONDS);
++        stringRedisTemplate.opsForSet().add(SMS_RETRY_SET_PREFIX, smsId);
++    }
++
++    public SmsRetryRecord getSmsRetryRecord(String smsId) {
++        String key = SMS_RETRY_RECORD_PREFIX + smsId;
++        String json = stringRedisTemplate.opsForValue().get(key);
++        if (json == null) {
++            return null;
++        }
++        return JSON.parseObject(json, SmsRetryRecord.class);
++    }
++
++    public void deleteSmsRetryRecord(String smsId) {
++        String key = SMS_RETRY_RECORD_PREFIX + smsId;
++        stringRedisTemplate.delete(key);
++        stringRedisTemplate.opsForSet().remove(SMS_RETRY_SET_PREFIX, smsId);
++    }
++
++    public boolean acquireCompensateLock(String phone) {
++        String key = SMS_COMPENSATE_LOCK_PREFIX + phone;
++        Boolean success = stringRedisTemplate.opsForValue().setIfAbsent(key, "1", COMPENSATE_LOCK_TTL_SECONDS, TimeUnit.SECONDS);
++        return success != null && success;
++    }
++
++    public void releaseCompensateLock(String phone) {
++        String key = SMS_COMPENSATE_LOCK_PREFIX + phone;
++        stringRedisTemplate.delete(key);
++    }
++
++    public void incrementRetryCount(String smsId) {
++        String key = SMS_RETRY_RECORD_PREFIX + smsId;
++        String json = stringRedisTemplate.opsForValue().get(key);
++        if (json != null) {
++            SmsRetryRecord record = JSON.parseObject(json, SmsRetryRecord.class);
++            record.setRetryCount(record.getRetryCount() + 1);
++            record.setLastRetryTime(System.currentTimeMillis());
++            stringRedisTemplate.opsForValue().set(key, JSON.toJSONString(record), SMS_RETRY_RECORD_TTL_SECONDS, TimeUnit.SECONDS);
++        }
++    }
++
++    public Set<String> getAllRetryRecordIds() {
++        return stringRedisTemplate.opsForSet().members(SMS_RETRY_SET_PREFIX);
++    }
++
++    public static class SmsRetryRecord {
++        private String phone;
++        private String smsId;
++        private String templateCode;
++        private String errorCode;
++        private String errorStack;
++        private int retryCount;
++        private long lastRetryTime;
++
++        public SmsRetryRecord() {
++        }
++
++        public SmsRetryRecord(String phone, String smsId, String templateCode, String errorCode, String errorStack, int retryCount, long lastRetryTime) {
++            this.phone = phone;
++            this.smsId = smsId;
++            this.templateCode = templateCode;
++            this.errorCode = errorCode;
++            this.errorStack = errorStack;
++            this.retryCount = retryCount;
++            this.lastRetryTime = lastRetryTime;
++        }
++
++        public String getPhone() { return phone; }
++        public void setPhone(String phone) { this.phone = phone; }
++
++        public String getSmsId() { return smsId; }
++        public void setSmsId(String smsId) { this.smsId = smsId; }
++
++        public String getTemplateCode() { return templateCode; }
++        public void setTemplateCode(String templateCode) { this.templateCode = templateCode; }
++
++        public String getErrorCode() { return errorCode; }
++        public void setErrorCode(String errorCode) { this.errorCode = errorCode; }
++
++        public String getErrorStack() { return errorStack; }
++        public void setErrorStack(String errorStack) { this.errorStack = errorStack; }
++
++        public int getRetryCount() { return retryCount; }
++        public void setRetryCount(int retryCount) { this.retryCount = retryCount; }
++
++        public long getLastRetryTime() { return lastRetryTime; }
++        public void setLastRetryTime(long lastRetryTime) { this.lastRetryTime = lastRetryTime; }
++    }
++}
+diff --git a/cf-framework-parent/cf-sms/cf-sms-service/src/main/java/com/cf/sms/task/SmsRetryTask.java b/cf-framework-parent/cf-sms/cf-sms-service/src/main/java/com/cf/sms/task/SmsRetryTask.java
+new file mode 100644
+index 0000000..39cb3c4
+--- /dev/null
++++ b/cf-framework-parent/cf-sms/cf-sms-service/src/main/java/com/cf/sms/task/SmsRetryTask.java
+@@ -0,0 +1,157 @@
++package com.cf.sms.task;
++
++import com.aliyuncs.CommonRequest;
++import com.aliyuncs.CommonResponse;
++import com.aliyuncs.DefaultAcsClient;
++import com.aliyuncs.IAcsClient;
++import com.aliyuncs.http.MethodType;
++import com.aliyuncs.profile.DefaultProfile;
++import com.cf.framework.utils.RedisUtils;
++import com.cf.sms.dao.mapper.CfSmsMapper;
++import com.cf.sms.domain.CfSms;
++import com.cf.ucenter.domain.CfWeixinConfig;
++import com.cf.ucenter.service.CfWeixinConfigService;
++import com.cf.ucenter.wxtools.WeiXinConfigUtils;
++import com.fasterxml.jackson.databind.JsonNode;
++import com.fasterxml.jackson.databind.ObjectMapper;
++import org.apache.dubbo.config.annotation.Reference;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.scheduling.annotation.Scheduled;
++import org.springframework.stereotype.Component;
++
++import java.util.List;
++import java.util.Set;
++
++@Component
++public class SmsRetryTask {
++
++    private static final Logger logger = LoggerFactory.getLogger(SmsRetryTask.class);
++    private static final long COMPENSATE_RETRY_BACKOFF_MS = 2000L;
++
++    @Autowired
++    private CfSmsMapper cfSmsMapper;
++
++    @Autowired
++    private RedisUtils redisUtils;
++
++    @Reference(version = "1.0.0", retries = 0, timeout = 5000, check = false)
++    private CfWeixinConfigService cfWeixinConfigService;
++
++    private final ObjectMapper objectMapper = new ObjectMapper();
++
++    @Scheduled(fixedDelay = 30000, initialDelay = 60000)
++    public void compensateFailedSms() {
++        logger.info("SmsRetryTask: starting compensation scan");
++
++        Set<String> retryRecordIds = redisUtils.getAllRetryRecordIds();
++        if (retryRecordIds == null || retryRecordIds.isEmpty()) {
++            logger.info("SmsRetryTask: no retry records found");
++            return;
++        }
++
++        for (String smsId : retryRecordIds) {
++            try {
++                processRetryRecord(smsId);
++            } catch (Exception e) {
++                logger.error("SmsRetryTask: error processing smsId={}", smsId, e);
++            }
++        }
++    }
++
++    private void processRetryRecord(String smsId) {
++        RedisUtils.SmsRetryRecord record = redisUtils.getSmsRetryRecord(smsId);
++        if (record == null) {
++            redisUtils.deleteSmsRetryRecord(smsId);
++            return;
++        }
++
++        if (!redisUtils.acquireCompensateLock(record.getPhone())) {
++            logger.info("SmsRetryTask: phone {} is being compensated by another node, skipping", record.getPhone());
++            return;
++        }
++
++        try {
++            CfSms cfSms = cfSmsMapper.selectByPrimaryKey(smsId);
++            if (cfSms == null) {
++                logger.warn("SmsRetryTask: sms record not found for smsId={}, cleaning up", smsId);
++                redisUtils.deleteSmsRetryRecord(smsId);
++                return;
++            }
++
++            if (cfSms.getStatus() == CfSms.STATUS_SUCCESS) {
++                logger.info("SmsRetryTask: smsId={} already success, cleaning up", smsId);
++                redisUtils.deleteSmsRetryRecord(smsId);
++                return;
++            }
++
++            if (cfSms.getRetryCount() != null && cfSms.getRetryCount() >= CfSms.MAX_RETRY_COUNT) {
++                logger.warn("SmsRetryTask: smsId={} exceeded max retry count ({}), marking as final failed", smsId, CfSms.MAX_RETRY_COUNT);
++                redisUtils.deleteSmsRetryRecord(smsId);
++                return;
++            }
++
++            logger.info("SmsRetryTask: retrying smsId={}, phone={}, currentRetryCount={}", smsId, record.getPhone(), cfSms.getRetryCount());
++
++            Thread.sleep(COMPENSATE_RETRY_BACKOFF_MS);
++
++            boolean success = retrySendSms(cfSms, record);
++
++            if (success) {
++                cfSmsMapper.updateSmsToSuccess(smsId, CfSms.STATUS_SUCCESS);
++                redisUtils.deleteSmsRetryRecord(smsId);
++                logger.info("SmsRetryTask: smsId={} compensation success", smsId);
++            } else {
++                int newRetryCount = (cfSms.getRetryCount() == null ? 0 : cfSms.getRetryCount()) + 1;
++                cfSmsMapper.updateSmsStatus(smsId, CfSms.STATUS_FAILED, record.getErrorCode(), record.getErrorStack(), newRetryCount, System.currentTimeMillis());
++                redisUtils.incrementRetryCount(smsId);
++                logger.warn("SmsRetryTask: smsId={} compensation failed, new retryCount={}", smsId, newRetryCount);
++            }
++        } catch (InterruptedException e) {
++            Thread.currentThread().interrupt();
++            logger.error("SmsRetryTask: interrupted while processing smsId={}", smsId, e);
++        } finally {
++            redisUtils.releaseCompensateLock(record.getPhone());
++        }
++    }
++
++    private boolean retrySendSms(CfSms cfSms, RedisUtils.SmsRetryRecord record) {
++        try {
++            List<CfWeixinConfig> cfWeixinConfigs = cfWeixinConfigService.getWeiXinLoginConfigragtion("ali_sms");
++            if (cfWeixinConfigs == null || cfWeixinConfigs.isEmpty()) {
++                logger.error("SmsRetryTask: no WeixinConfig found for retry");
++                return false;
++            }
++
++            String signName = WeiXinConfigUtils.getWeiXinConfigragtionByEnName("sign_name", cfWeixinConfigs);
++            String templateCode = WeiXinConfigUtils.getWeiXinConfigragtionByEnName("template_code", cfWeixinConfigs);
++            String regionId = WeiXinConfigUtils.getWeiXinConfigragtionByEnName("region_id", cfWeixinConfigs);
++            String accessKeyId = WeiXinConfigUtils.getWeiXinConfigragtionByEnName("access_key_id", cfWeixinConfigs);
++            String secret = WeiXinConfigUtils.getWeiXinConfigragtionByEnName("secret", cfWeixinConfigs);
++
++            DefaultProfile profile = DefaultProfile.getProfile(regionId, accessKeyId, secret);
++            IAcsClient client = new DefaultAcsClient(profile);
++
++            CommonRequest request = new CommonRequest();
++            request.setMethod(MethodType.POST);
++            request.setDomain("dysmsapi.aliyuncs.com");
++            request.setVersion("2017-05-25");
++            request.setAction("SendSms");
++            request.putQueryParameter("RegionId", regionId);
++            request.putQueryParameter("PhoneNumbers", cfSms.getPhone());
++            request.putQueryParameter("SignName", signName);
++            request.putQueryParameter("TemplateCode", templateCode);
++            request.putQueryParameter("TemplateParam", "{\"code\":\"" + cfSms.getCode() + "\"}");
++
++            CommonResponse response = client.getCommonResponse(request);
++            String responseData = response.getData();
++            JsonNode jsonNode = objectMapper.readTree(responseData);
++            String code = jsonNode.has("Code") ? jsonNode.get("Code").asText() : null;
++            return "OK".equals(code);
++        } catch (Exception e) {
++            logger.error("SmsRetryTask: retry send failed for smsId={}", cfSms.getId(), e);
++            return false;
++        }
++    }
++}

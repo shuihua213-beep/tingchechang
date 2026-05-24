@@ -9,6 +9,10 @@
     <result column="status" property="status" jdbcType="BIT" />
     <result column="create_time" property="createTime" jdbcType="BIGINT" />
     <result column="expire_time" property="expireTime" jdbcType="BIGINT" />
+    <result column="error_code" property="errorCode" jdbcType="VARCHAR" />
+    <result column="error_stack" property="errorStack" jdbcType="VARCHAR" />
+    <result column="retry_count" property="retryCount" jdbcType="INTEGER" />
+    <result column="last_retry_time" property="lastRetryTime" jdbcType="BIGINT" />
   </resultMap>
   <sql id="Example_Where_Clause" >
     <where >
@@ -69,7 +73,7 @@
     </where>
   </sql>
   <sql id="Base_Column_List" >
-    id, phone, code, type, status, create_time, expire_time
+    id, phone, code, type, status, create_time, expire_time, error_code, error_stack, retry_count, last_retry_time
   </sql>
   <select id="selectByExample" resultMap="BaseResultMap" parameterType="com.cf.sms.domain.CfSmsExample" >
     select
@@ -250,5 +254,20 @@
   <update id="updateLastValidSmsCodeStatus" >
     update cf_sms set status = 1 where phone = #{phone,jdbcType=VARCHAR} and code = #{code,jdbcType=VARCHAR}
     and type = #{type,jdbcType=INTEGER} and status = 0 and expire_time > #{currentTime,jdbcType=BIGINT}
+  </update>
+  <select id="getFailedSmsRecords" resultMap="BaseResultMap" >
+    select * from cf_sms where status = #{status,jdbcType=INTEGER} and retry_count &lt; #{maxRetryCount,jdbcType=INTEGER}
+    order by create_time asc
+  </select>
+  <update id="updateSmsStatus" >
+    update cf_sms set status = #{status,jdbcType=INTEGER},
+      error_code = #{errorCode,jdbcType=VARCHAR},
+      error_stack = #{errorStack,jdbcType=VARCHAR},
+      retry_count = #{retryCount,jdbcType=INTEGER},
+      last_retry_time = #{lastRetryTime,jdbcType=BIGINT}
+    where id = #{id,jdbcType=VARCHAR}
+  </update>
+  <update id="updateSmsToSuccess" >
+    update cf_sms set status = #{status,jdbcType=INTEGER} where id = #{id,jdbcType=VARCHAR}
   </update>
 </mapper>

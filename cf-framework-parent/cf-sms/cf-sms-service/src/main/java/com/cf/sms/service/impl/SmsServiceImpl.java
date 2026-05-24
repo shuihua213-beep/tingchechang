@@ -7,6 +7,7 @@ import com.aliyuncs.IAcsClient;
 import com.aliyuncs.exceptions.ClientException;
 import com.aliyuncs.exceptions.ServerException;
 import com.aliyuncs.http.MethodType;
+import com.aliyuncs.http.HttpResponse;
 import com.aliyuncs.profile.DefaultProfile;
 import com.cf.framework.domain.response.CommonCode;
 import com.cf.framework.domain.response.ResponseResult;
@@ -15,12 +16,15 @@ import com.cf.framework.domain.ucenter.response.UcenterCode;
 import com.cf.framework.exception.ExceptionCast;
 import com.cf.framework.utils.HttpClient;
 import com.cf.framework.utils.IdWorker;
+import com.cf.framework.utils.RedisUtils;
 import com.cf.sms.dao.mapper.CfSmsMapper;
 import com.cf.sms.domain.CfSms;
 import com.cf.sms.service.SmsService;
 import com.cf.ucenter.domain.CfWeixinConfig;
 import com.cf.ucenter.service.CfWeixinConfigService;
 import com.cf.ucenter.wxtools.WeiXinConfigUtils;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tencentcloudapi.captcha.v20190722.CaptchaClient;
 import com.tencentcloudapi.captcha.v20190722.models.DescribeCaptchaMiniResultRequest;
 import com.tencentcloudapi.captcha.v20190722.models.DescribeCaptchaMiniResultResponse;
@@ -32,22 +36,23 @@ import com.tencentcloudapi.common.profile.HttpProfile;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.annotation.Reference;
 import org.apache.dubbo.config.annotation.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-/**
- * 请在此填写描述
- *
- * @ClassName SmsServiceImpl
- * @Author 隔壁小王子 981011512@qq.com
- * @Date 2020/12/25/025 22:50
- * @Version 1.0
- **/
 @Service(version = "1.0.0", loadbalance = "roundrobin")
 public class SmsServiceImpl implements SmsService {
+
+    private static final Logger logger = LoggerFactory.getLogger(SmsServiceImpl.class);
+    private static final int MAX_RETRY_COUNT = 3;
+    private static final long BASE_BACKOFF_MS = 1000L;
+    private static final long MAX_BACKOFF_MS = 10000L;
 
     @Autowired
     private CfSmsMapper cfSmsMapper;
@@ -55,15 +60,21 @@ public class SmsServiceImpl implements SmsService {
     private IdWorker idWorker;
     @Autowired
     StringRedisTemplate stringRedisTemplate;
+    @Autowired
+    private RedisUtils redisUtils;
     @Reference(version = "1.0.0", retries = 0, timeout = 5000, check = false)
     private CfWeixinConfigService cfWeixinConfigService;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public void sendSms(String phone, Integer type) {
         checkSendFrequently(phone, type);
         String code = (int)((Math.random()*9+1)*100000)+"";
-        cfSmsMapper.insert(new CfSms(idWorker.nextId(),phone,code,type,0,System.currentTimeMillis(),
-                System.currentTimeMillis()+CfSms.SMS_CODE_VALID_TIME));
+        String smsId = idWorker.nextId();
+        CfSms cfSms = new CfSms(smsId, phone, code, type, CfSms.STATUS_PENDING, System.currentTimeMillis(),
+                System.currentTimeMillis() + CfSms.SMS_CODE_VALID_TIME);
+        cfSmsMapper.insert(cfSms);
 
         List<CfWeixinConfig> cfWeixinConfigs = cfWeixinConfigService.getWeiXinLoginConfigragtion("ali_sms");
         String signName = WeiXinConfigUtils.getWeiXinConfigragtionByEnName("sign_name", cfWeixinConfigs);
@@ -72,7 +83,152 @@ public class SmsServiceImpl implements SmsService {
         String accessKeyId = WeiXinConfigUtils.getWeiXinConfigragtionByEnName("access_key_id", cfWeixinConfigs);
         String secret = WeiXinConfigUtils.getWeiXinConfigragtionByEnName("secret", cfWeixinConfigs);
 
-        sendSmsByAli(phone,"{\"code\":\""+code+"\"}",signName,templateCode,regionId,accessKeyId,secret,"","");
+        sendSmsByAliWithRetry(smsId, phone, "{\"code\":\""+code+"\"}", signName, templateCode, regionId, accessKeyId, secret, "", "");
+    }
+
+    private void sendSmsByAliWithRetry(String smsId, String phone, String templateParam, String signName, String templateCode, String regionId, String accessKeyId, String secret, String smsUpExtendCode, String outId) {
+        int retryCount = 0;
+        String lastErrorCode = null;
+        String lastErrorStack = null;
+
+        while (retryCount <= MAX_RETRY_COUNT) {
+            try {
+                if (retryCount > 0) {
+                    long backoffTime = calculateBackoff(retryCount);
+                    logger.info("SMS retry for smsId={}, retryCount={}, backoff={}ms", smsId, retryCount, backoffTime);
+                    Thread.sleep(backoffTime);
+                }
+
+                boolean success = executeSendSms(phone, templateParam, signName, templateCode, regionId, accessKeyId, secret, smsUpExtendCode, outId);
+
+                if (success) {
+                    cfSmsMapper.updateSmsToSuccess(smsId, CfSms.STATUS_SUCCESS);
+                    redisUtils.deleteSmsRetryRecord(smsId);
+                    logger.info("SMS send success for smsId={}, phone={}", smsId, phone);
+                    return;
+                }
+            } catch (Exception e) {
+                lastErrorCode = extractErrorCode(e);
+                lastErrorStack = extractErrorStack(e);
+                logger.error("SMS send failed for smsId={}, retryCount={}, errorCode={}", smsId, retryCount, lastErrorCode, e);
+            }
+
+            retryCount++;
+            cfSmsMapper.updateSmsStatus(smsId, CfSms.STATUS_FAILED, lastErrorCode, lastErrorStack, retryCount, System.currentTimeMillis());
+        }
+
+        redisUtils.saveSmsRetryRecord(smsId, phone, templateCode, lastErrorCode, lastErrorStack, retryCount);
+        logger.error("SMS send exhausted all retries for smsId={}, phone={}", smsId, phone);
+    }
+
+    private boolean executeSendSms(String phone, String templateParam, String signName, String templateCode, String regionId, String accessKeyId, String secret, String smsUpExtendCode, String outId) {
+        DefaultProfile profile = DefaultProfile.getProfile(regionId, accessKeyId, secret);
+        IAcsClient client = new DefaultAcsClient(profile);
+
+        CommonRequest request = new CommonRequest();
+        request.setMethod(MethodType.POST);
+        request.setDomain("dysmsapi.aliyuncs.com");
+        request.setVersion("2017-05-25");
+        request.setAction("SendSms");
+        request.putQueryParameter("RegionId", regionId);
+        if(StringUtils.isNotEmpty(phone)){
+            request.putQueryParameter("PhoneNumbers", phone);
+        }
+        if(StringUtils.isNotEmpty(signName)){
+            request.putQueryParameter("SignName", signName);
+        }
+        if(StringUtils.isNotEmpty(templateCode)){
+            request.putQueryParameter("TemplateCode", templateCode);
+        }
+        if(StringUtils.isNotEmpty(templateParam)){
+            request.putQueryParameter("TemplateParam", templateParam);
+        }
+        if(StringUtils.isNotEmpty(smsUpExtendCode)){
+            request.putQueryParameter("SmsUpExtendCode", smsUpExtendCode);
+        }
+        if(StringUtils.isNotEmpty(outId)){
+            request.putQueryParameter("OutId", outId);
+        }
+
+        try {
+            CommonResponse response = client.getCommonResponse(request);
+            String responseData = response.getData();
+            JsonNode jsonNode = objectMapper.readTree(responseData);
+            String code = jsonNode.has("Code") ? jsonNode.get("Code").asText() : null;
+            return "OK".equals(code);
+        } catch (ServerException e) {
+            throw new RuntimeException("Aliyun SMS ServerException: " + e.getErrCode() + " - " + e.getErrMsg(), e);
+        } catch (ClientException e) {
+            throw new RuntimeException("Aliyun SMS ClientException: " + e.getErrCode() + " - " + e.getErrMsg(), e);
+        } catch (Exception e) {
+            throw new RuntimeException("Aliyun SMS unexpected error: " + e.getMessage(), e);
+        }
+    }
+
+    private long calculateBackoff(int retryCount) {
+        long backoff = BASE_BACKOFF_MS * (long) Math.pow(2, retryCount - 1);
+        return Math.min(backoff, MAX_BACKOFF_MS);
+    }
+
+    private String extractErrorCode(Exception e) {
+        if (e.getMessage() != null && e.getMessage().contains(":")) {
+            String[] parts = e.getMessage().split(":");
+            if (parts.length > 0) {
+                return parts[0].trim();
+            }
+        }
+        return e.getClass().getSimpleName();
+    }
+
+    private String extractErrorStack(Exception e) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        e.printStackTrace(pw);
+        String fullStack = sw.toString();
+        if (fullStack.length() > 1000) {
+            return fullStack.substring(0, 1000) + "...";
+        }
+        return fullStack;
+    }
+
+    @Override
+    @Deprecated
+    public void sendSmsByAli(String PhoneNumbers, String TemplateParam, String signName, String templateCode, String regionId, String accessKeyId, String secret, String SmsUpExtendCode, String OutId) {
+        DefaultProfile profile = DefaultProfile.getProfile(regionId, accessKeyId, secret);
+        IAcsClient client = new DefaultAcsClient(profile);
+
+        CommonRequest request = new CommonRequest();
+        request.setMethod(MethodType.POST);
+        request.setDomain("dysmsapi.aliyuncs.com");
+        request.setVersion("2017-05-25");
+        request.setAction("SendSms");
+        request.putQueryParameter("RegionId", regionId);
+        if(StringUtils.isNotEmpty(PhoneNumbers)){
+            request.putQueryParameter("PhoneNumbers", PhoneNumbers);
+        }
+        if(StringUtils.isNotEmpty(signName)){
+            request.putQueryParameter("SignName", signName);
+        }
+        if(StringUtils.isNotEmpty(templateCode)){
+            request.putQueryParameter("TemplateCode", templateCode);
+        }
+        if(StringUtils.isNotEmpty(TemplateParam)){
+            request.putQueryParameter("TemplateParam", TemplateParam);
+        }
+        if(StringUtils.isNotEmpty(SmsUpExtendCode)){
+            request.putQueryParameter("SmsUpExtendCode", SmsUpExtendCode);
+        }
+        if(StringUtils.isNotEmpty(OutId)){
+            request.putQueryParameter("OutId", OutId);
+        }
+
+        try {
+            CommonResponse response = client.getCommonResponse(request);
+        } catch (ServerException e) {
+            ExceptionCast.cast(CommonCode.FAIL, e.getMessage());
+        } catch (ClientException e) {
+            ExceptionCast.cast(CommonCode.FAIL, e.getMessage());
+        }
     }
 
     @Override

@@ -36,4 +36,10 @@ public interface CfSmsMapper {
 
     int updateLastValidSmsCodeStatus(@Param("phone") String phone,@Param("code") String code,
                                      @Param("type") Integer type,@Param("currentTime") Long currentTime);
+
+    List<CfSms> getFailedSmsRecords(@Param("status") Integer status, @Param("maxRetryCount") Integer maxRetryCount);
+
+    int updateSmsStatus(@Param("id") String id, @Param("status") Integer status, @Param("errorCode") String errorCode, @Param("errorStack") String errorStack, @Param("retryCount") Integer retryCount, @Param("lastRetryTime") Long lastRetryTime);
+
+    int updateSmsToSuccess(@Param("id") String id, @Param("status") Integer status);
 }
