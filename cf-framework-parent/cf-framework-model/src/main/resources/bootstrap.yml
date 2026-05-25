@@ -1,0 +1,52 @@
+spring:
+  datasource:
+    name: caifeng
+    type: com.alibaba.druid.pool.DruidDataSource
+    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/${MYSQL_DB:caifeng}?characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false
+    username: ${MYSQL_USER:caifeng}
+    password: ${MYSQL_PASSWORD:root}
+    driver-class-name: com.mysql.jdbc.Driver
+    maxActive: 32
+    druid:
+      url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/${MYSQL_DB:caifeng}?characterEncoding=utf-8&useSSL=false
+      username: ${MYSQL_USER:caifeng}
+      password: ${MYSQL_PASSWORD:root}
+      driverClassName: com.mysql.jdbc.Driver
+      initialSize: 5
+      minIdle: 5
+      maxActive: 20
+      maxWait: 10000
+      testOnBorrow: true
+      testOnReturn: false
+      timeBetweenEvictionRunsMillis: 60000
+      minEvictableIdleTimeMillis: 300000
+  redis:
+    host: ${REDIS_HOST:127.0.0.1}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    database: ${REDIS_DB:0}
+    jedis:
+      pool:
+        maxActive: 20
+        maxIdle: 20
+        minIdle: 10
+        maxWait: -1
+  data:
+    mongodb:
+      uri: mongodb://${MONGO_USER:caifeng}:${MONGO_PASSWORD:caifEng666}@${MONGO_HOST:127.0.0.1}:${MONGO_PORT:27017}/?authSource=${MONGO_DB:caifeng}
+      database: ${MONGO_DB:caifeng}
+dubbo:
+  registry:
+    address: zookeeper://${ZOOKEEPER_HOST:127.0.0.1}:${ZOOKEEPER_PORT:2181}
+cf:
+  fastdfs:
+    connect_timeout_in_seconds: 5
+    network_timeout_in_seconds: 30
+    charset: UTF-8
+    tracker_servers: ${FASTDFS_HOST:127.0.0.1}:${FASTDFS_PORT:22122}
+auth:
+  tokenValiditySeconds: 1200
+  clientId: ${OAUTH2_CLIENT_ID:oauth2用户名，记得在对应的数据库配置用户名}
+  clientSecret: ${OAUTH2_CLIENT_SECRET:oauth2密码，记得在对应数据库配置密码}
+  cookieDomain: ${COOKIE_DOMAIN:xuecheng.com}
+  cookieMaxAge: -1
