@@ -1,0 +1,341 @@
+diff --git a/cf-framework-parent/cf-framework-utils/pom.xml b/cf-framework-parent/cf-framework-utils/pom.xml
+index acbeeac..24f9fec 100644
+--- a/cf-framework-parent/cf-framework-utils/pom.xml
++++ b/cf-framework-parent/cf-framework-utils/pom.xml
+@@ -32,37 +32,27 @@
+         <dependency>
+             <groupId>org.apache.httpcomponents</groupId>
+             <artifactId>httpclient</artifactId>
+-            <version>4.5.3</version>
+         </dependency>
+-        <!-- https://mvnrepository.com/artifact/net.lingala.zip4j/zip4j -->
+         <dependency>
+             <groupId>net.lingala.zip4j</groupId>
+             <artifactId>zip4j</artifactId>
+-            <version>1.3.1</version>
+         </dependency>
+-        <!-- https://mvnrepository.com/artifact/org.springframework.security/spring-security-crypto -->
+         <dependency>
+             <groupId>org.springframework.security</groupId>
+             <artifactId>spring-security-crypto</artifactId>
+-            <version>4.2.3.RELEASE</version>
+         </dependency>
+-        <!-- https://mvnrepository.com/artifact/org.springframework.security/spring-security-jwt -->
+         <dependency>
+             <groupId>org.springframework.security</groupId>
+             <artifactId>spring-security-jwt</artifactId>
+-            <version>1.0.8.RELEASE</version>
+         </dependency>
+-        <!-- https://mvnrepository.com/artifact/org.springframework/spring-mock -->
+         <dependency>
+             <groupId>org.springframework</groupId>
+             <artifactId>spring-mock</artifactId>
+             <version>2.0.8</version>
+         </dependency>
+-        <!-- 二维码 -->
+         <dependency>
+             <groupId>com.google.zxing</groupId>
+             <artifactId>javase</artifactId>
+-            <version>3.3.3</version>
+         </dependency>
+         <dependency>
+             <groupId>com.alibaba</groupId>
+@@ -87,23 +77,18 @@
+         <dependency>
+             <groupId>com.google.guava</groupId>
+             <artifactId>guava</artifactId>
+-            <version>24.0-jre</version>
+         </dependency>
+         <dependency>
+             <groupId>com.google.code.gson</groupId>
+             <artifactId>gson</artifactId>
+         </dependency>
+-        <!-- https://mvnrepository.com/artifact/org.apache.poi/poi -->
+         <dependency>
+             <groupId>org.apache.poi</groupId>
+             <artifactId>poi</artifactId>
+-            <version>4.1.2</version>
+         </dependency>
+-        <!-- https://mvnrepository.com/artifact/org.apache.poi/poi-ooxml -->
+         <dependency>
+             <groupId>org.apache.poi</groupId>
+             <artifactId>poi-ooxml</artifactId>
+-            <version>4.1.2</version>
+         </dependency>
+ 
+ 
+@@ -113,7 +98,6 @@
+             <plugin>
+                 <groupId>org.springframework.boot</groupId>
+                 <artifactId>spring-boot-maven-plugin</artifactId>
+-                <version>2.1.1.RELEASE</version>
+             </plugin>
+         </plugins>
+     </build>
+diff --git a/cf-framework-parent/cf-sms/cf-sms-dao/pom.xml b/cf-framework-parent/cf-sms/cf-sms-dao/pom.xml
+index a54b326..8b3e558 100644
+--- a/cf-framework-parent/cf-sms/cf-sms-dao/pom.xml
++++ b/cf-framework-parent/cf-sms/cf-sms-dao/pom.xml
+@@ -17,43 +17,30 @@
+             <artifactId>cf-sms-domain</artifactId>
+             <version>1.0-SNAPSHOT</version>
+         </dependency>
+-<!--        <dependency>-->
+-<!--            <groupId>org.springframework.boot</groupId>-->
+-<!--            <artifactId>spring-boot-starter-data-mongodb</artifactId>-->
+-<!--        </dependency>-->
+         <dependency>
+             <groupId>org.springframework.boot</groupId>
+             <artifactId>spring-boot-starter-amqp</artifactId>
+         </dependency>
+-        <!-- https://mvnrepository.com/artifact/org.mybatis.spring.boot/mybatis-spring-boot-starter -->
+         <dependency>
+             <groupId>org.mybatis.spring.boot</groupId>
+             <artifactId>mybatis-spring-boot-starter</artifactId>
+-            <version>2.0.1</version>
+         </dependency>
+-        <!-- https://mvnrepository.com/artifact/com.github.pagehelper/pagehelper -->
+         <dependency>
+             <groupId>com.github.pagehelper</groupId>
+             <artifactId>pagehelper</artifactId>
+-            <version>5.1.8</version>
+         </dependency>
+-        <!-- https://mvnrepository.com/artifact/com.github.jsqlparser/jsqlparser -->
+         <dependency>
+             <groupId>com.github.jsqlparser</groupId>
+             <artifactId>jsqlparser</artifactId>
+-            <version>2.0</version>
+         </dependency>
+ 
+-        <!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
+         <dependency>
+             <groupId>mysql</groupId>
+             <artifactId>mysql-connector-java</artifactId>
+         </dependency>
+-        <!-- https://mvnrepository.com/artifact/com.alibaba/druid -->
+         <dependency>
+             <groupId>com.alibaba</groupId>
+             <artifactId>druid</artifactId>
+-            <version>1.1.16</version>
+         </dependency>
+     </dependencies>
+ 
+diff --git a/cf-framework-parent/cf-sms/cf-sms-domain/pom.xml b/cf-framework-parent/cf-sms/cf-sms-domain/pom.xml
+index 306b299..5073446 100644
+--- a/cf-framework-parent/cf-sms/cf-sms-domain/pom.xml
++++ b/cf-framework-parent/cf-sms/cf-sms-domain/pom.xml
+@@ -16,55 +16,26 @@
+             <groupId>io.springfox</groupId>
+             <artifactId>springfox-swagger2</artifactId>
+         </dependency>
+-        <!-- https://mvnrepository.com/artifact/javax.validation/validation-api -->
+         <dependency>
+             <groupId>javax.validation</groupId>
+             <artifactId>validation-api</artifactId>
+-            <version>2.0.1.Final</version>
+         </dependency>
+         <dependency>
+             <groupId>org.projectlombok</groupId>
+             <artifactId>lombok</artifactId>
+         </dependency>
+-        <!-- https://mvnrepository.com/artifact/org.springframework.data/spring-data-commons -->
+         <dependency>
+             <groupId>org.springframework.data</groupId>
+             <artifactId>spring-data-commons</artifactId>
+-            <version>1.13.9.RELEASE</version>
+         </dependency>
+-        <!-- https://mvnrepository.com/artifact/org.springframework.data/spring-data-mongodb -->
+-<!--        <dependency>-->
+-<!--            <groupId>org.springframework.data</groupId>-->
+-<!--            <artifactId>spring-data-mongodb</artifactId>-->
+-<!--            <version>1.10.9.RELEASE</version>-->
+-<!--        </dependency>-->
+-        <!-- https://mvnrepository.com/artifact/org.hibernate/hibernate-core -->
+         <dependency>
+             <groupId>org.hibernate</groupId>
+             <artifactId>hibernate-core</artifactId>
+-            <version>5.0.12.Final</version>
+         </dependency>
+ 
+-
+-
+-        <!--        <dependency>
+-                    <groupId>org.springframework.boot</groupId>
+-                    <artifactId>spring-boot-starter-data-mongodb</artifactId>
+-                </dependency>-->
+-        <!--<dependency>
+-            <groupId>org.springframework.boot</groupId>
+-            <artifactId>spring-boot-starter-data-elasticsearch</artifactId>
+-        </dependency>-->
+-
+-        <!--        <dependency>
+-                    <groupId>org.springframework.boot</groupId>
+-                    <artifactId>spring-boot-starter-data-jpa</artifactId>
+-                </dependency>-->
+-        <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
+         <dependency>
+             <groupId>com.google.guava</groupId>
+             <artifactId>guava</artifactId>
+-            <version>24.0-jre</version>
+         </dependency>
+         <dependency>
+             <groupId>commons-io</groupId>
+diff --git a/cf-framework-parent/cf-ucenter/cf-ucenter-auth/pom.xml b/cf-framework-parent/cf-ucenter/cf-ucenter-auth/pom.xml
+index 7496b95..bf1d57b 100644
+--- a/cf-framework-parent/cf-ucenter/cf-ucenter-auth/pom.xml
++++ b/cf-framework-parent/cf-ucenter/cf-ucenter-auth/pom.xml
+@@ -80,12 +80,10 @@
+         <dependency>
+             <groupId>com.netflix.feign</groupId>
+             <artifactId>feign-okhttp</artifactId>
+-            <version>8.18.0</version>
+         </dependency>
+         <dependency>
+             <groupId>com.alibaba</groupId>
+             <artifactId>druid-spring-boot-starter</artifactId>
+-            <version>1.1.10</version>
+         </dependency>
+         <dependency>
+             <groupId>mysql</groupId>
+@@ -94,7 +92,6 @@
+         <dependency>
+             <groupId>org.springframework</groupId>
+             <artifactId>spring-orm</artifactId>
+-            <version>${springframework.version}</version>
+         </dependency>
+         <dependency>
+             <groupId>com.alibaba</groupId>
+@@ -112,7 +109,6 @@
+             <plugin>
+                 <groupId>org.springframework.boot</groupId>
+                 <artifactId>spring-boot-maven-plugin</artifactId>
+-                <version>2.1.1.RELEASE</version>
+                 <executions>
+                     <execution>
+                         <goals>
+diff --git a/cf-framework-parent/pom.xml b/cf-framework-parent/pom.xml
+index 1844ede..a87d9ac 100644
+--- a/cf-framework-parent/pom.xml
++++ b/cf-framework-parent/pom.xml
+@@ -102,9 +102,9 @@
+         <spring-boot.version>2.1.1.RELEASE</spring-boot.version>
+         <dubbo.version>2.7.3</dubbo.version>
+         <springframework.version>5.1.3.RELEASE</springframework.version>
+-        <mybatis-spring-boot.version>1.3.1</mybatis-spring-boot.version>
++        <mybatis-spring-boot.version>2.0.1</mybatis-spring-boot.version>
+         <mybatis.version>3.4.5</mybatis.version>
+-        <druid.version>1.1.6</druid.version>
++        <druid.version>1.1.16</druid.version>
+         <mysql-connector-java.version>8.0.11</mysql-connector-java.version>
+         <fastdfs.version>1.26.4</fastdfs.version>
+ 
+@@ -121,6 +121,16 @@
+         <fastdfs-client-java.version>1.27.0.0</fastdfs-client-java.version>
+         <elasticsearch.version>6.2.1</elasticsearch.version>
+         <guava.version>24.0-jre</guava.version>
++
++        <pagehelper.version>5.1.8</pagehelper.version>
++        <jsqlparser.version>2.0</jsqlparser.version>
++        <druid-spring-boot-starter.version>1.1.16</druid-spring-boot-starter.version>
++        <spring-security-jwt.version>1.0.8.RELEASE</spring-security-jwt.version>
++        <zxing.version>3.3.3</zxing.version>
++        <zip4j.version>1.3.1</zip4j.version>
++        <poi.version>4.1.2</poi.version>
++        <aliyun-java-sdk-core.version>4.1.0</aliyun-java-sdk-core.version>
++        <tencentcloud-sdk-java.version>3.1.232</tencentcloud-sdk-java.version>
+     </properties>
+     <!--test-->
+     <dependencyManagement>
+@@ -286,20 +296,71 @@
+                 <version>${guava.version}</version>
+             </dependency>
+ 
++            <dependency>
++                <groupId>com.alibaba</groupId>
++                <artifactId>druid-spring-boot-starter</artifactId>
++                <version>${druid-spring-boot-starter.version}</version>
++            </dependency>
++            <dependency>
++                <groupId>com.github.pagehelper</groupId>
++                <artifactId>pagehelper</artifactId>
++                <version>${pagehelper.version}</version>
++            </dependency>
++            <dependency>
++                <groupId>com.github.jsqlparser</groupId>
++                <artifactId>jsqlparser</artifactId>
++                <version>${jsqlparser.version}</version>
++            </dependency>
++            <dependency>
++                <groupId>org.springframework.security</groupId>
++                <artifactId>spring-security-jwt</artifactId>
++                <version>${spring-security-jwt.version}</version>
++            </dependency>
++            <dependency>
++                <groupId>com.google.zxing</groupId>
++                <artifactId>javase</artifactId>
++                <version>${zxing.version}</version>
++            </dependency>
++            <dependency>
++                <groupId>net.lingala.zip4j</groupId>
++                <artifactId>zip4j</artifactId>
++                <version>${zip4j.version}</version>
++            </dependency>
++            <dependency>
++                <groupId>org.apache.poi</groupId>
++                <artifactId>poi</artifactId>
++                <version>${poi.version}</version>
++            </dependency>
++            <dependency>
++                <groupId>org.apache.poi</groupId>
++                <artifactId>poi-ooxml</artifactId>
++                <version>${poi.version}</version>
++            </dependency>
++            <dependency>
++                <groupId>com.aliyun</groupId>
++                <artifactId>aliyun-java-sdk-core</artifactId>
++                <version>${aliyun-java-sdk-core.version}</version>
++            </dependency>
++            <dependency>
++                <groupId>com.tencentcloudapi</groupId>
++                <artifactId>tencentcloud-sdk-java</artifactId>
++                <version>${tencentcloud-sdk-java.version}</version>
++            </dependency>
++
+         </dependencies>
+     </dependencyManagement>
+     <build>
+         <finalName>${project.artifactId}</finalName>
++        <pluginManagement>
++            <plugins>
++                <plugin>
++                    <groupId>org.springframework.boot</groupId>
++                    <artifactId>spring-boot-maven-plugin</artifactId>
++                    <version>${spring-boot.version}</version>
++                </plugin>
++            </plugins>
++        </pluginManagement>
+         <plugins>
+-            <!-- &lt;!&ndash; 资源文件拷贝插件 &ndash;&gt;
+-             <plugin>
+-                 <groupId>org.apache.maven.plugins</groupId>
+-                 <artifactId>maven-resources-plugin</artifactId>
+-                 <configuration>
+-                     <encoding>UTF-8</encoding>
+-                 </configuration>
+-             </plugin>-->
+-            <!-- java编译插件 -->
+             <plugin>
+                 <groupId>org.apache.maven.plugins</groupId>
+                 <artifactId>maven-compiler-plugin</artifactId>
+@@ -309,11 +370,6 @@
+                     <encoding>UTF-8</encoding>
+                 </configuration>
+             </plugin>
+-            <plugin>
+-                <groupId>org.springframework.boot</groupId>
+-                <artifactId>spring-boot-maven-plugin</artifactId>
+-                <version>2.1.1.RELEASE</version>
+-            </plugin>
+         </plugins>
+     </build>
+ 
