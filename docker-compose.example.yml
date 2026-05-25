@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: caifeng
+      MYSQL_USER: caifeng
+      MYSQL_PASSWORD: your_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  mongodb:
+    image: mongo:5
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: caifeng
+      MONGO_INITDB_ROOT_PASSWORD: caifEng666
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  zookeeper:
+    image: zookeeper:3.8
+    ports:
+      - "2181:2181"
+    volumes:
+      - zookeeper_data:/data
+      - zookeeper_logs:/datalog
+
+  # FastDFS 示例配置
+  fastdfs-tracker:
+    image: season/fastdfs:1.2
+    command: tracker
+    volumes:
+      - fastdfs_tracker:/fastdfs/tracker
+
+  fastdfs-storage:
+    image: season/fastdfs:1.2
+    command: storage
+    environment:
+      TRACKER_SERVER: fastdfs-tracker:22122
+    volumes:
+      - fastdfs_storage:/fastdfs/storage
+    depends_on:
+      - fastdfs-tracker
+
+volumes:
+  mysql_data:
+  redis_data:
+  mongo_data:
+  zookeeper_data:
+  zookeeper_logs:
+  fastdfs_tracker:
+  fastdfs_storage:

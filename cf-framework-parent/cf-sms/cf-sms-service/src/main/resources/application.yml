@@ -5,46 +5,17 @@ spring:
   application:
     name: cf-sms-service
   profiles:
-    active: dev
-  datasource:
-    name: caifeng
-    type: com.alibaba.druid.pool.DruidDataSource
-    url: jdbc:mysql://mysql数据库地址:3306/caifeng?characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false
-    username: caifeng
-    password: mysql数据库密码
-    driver-class-name: com.mysql.jdbc.Driver
-    maxActive: 32
-  redis:
-    host: redis数据库地址
-    port: 6379
-    password: redis密码
-    database: 0
-    jedis:
-      pool:
-        maxActive: 3
-        maxIdle: 3
-        minIdle: 1
-        maxWait: -1
+    active: dev,common
 
 #公共配置与profiles选择无关
 mybatis:
-  #  mapperScanPackage: com.cf.mapper
-  #  typeAliasesPackage: com.cf.pojo
   mapperLocations: classpath:com.cf.sms.dao.mapper/*.xml
   configLocation: classpath:config/SqlMapConfig.xml
 dubbo:
   scan:
     base-packages: com.cf.sms.service.impl
-  application:
-    name: ${spring.application.name}
   protocol:
-    name: dubbo
     port: 20884
-    threads: 200
-    accepts: 0
-  registry:
-    address: zookeeper://127.0.0.1:2181
-  provider.filter: -exception
 
   # 数据源 ds0,ds1
 #  shardingsphere:

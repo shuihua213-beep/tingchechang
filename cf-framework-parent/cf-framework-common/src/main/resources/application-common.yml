@@ -1,0 +1,42 @@
+spring:
+  datasource:
+    name: ${DB_NAME:caifeng}
+    type: com.alibaba.druid.pool.DruidDataSource
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/caifeng?characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false}
+    username: ${DB_USER:caifeng}
+    password: ${DB_PASSWORD:caifeng}
+    driver-class-name: com.mysql.jdbc.Driver
+    maxActive: ${DB_MAX_ACTIVE:32}
+  redis:
+    host: ${REDIS_HOST:127.0.0.1}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    database: ${REDIS_DB:0}
+    jedis:
+      pool:
+        maxActive: ${REDIS_MAX_ACTIVE:20}
+        maxIdle: ${REDIS_MAX_IDLE:20}
+        minIdle: ${REDIS_MIN_IDLE:10}
+        maxWait: ${REDIS_MAX_WAIT:-1}
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://caifeng:caifEng666@127.0.0.1:27017/?authSource=caifeng}
+      database: ${MONGODB_DB:caifeng}
+
+dubbo:
+  application:
+    name: ${spring.application.name}
+  protocol:
+    name: dubbo
+    threads: 200
+    accepts: 0
+  registry:
+    address: ${DUBBO_REGISTRY:zookeeper://127.0.0.1:2181}
+  provider.filter: -exception
+
+cf:
+  fastdfs:
+    connect_timeout_in_seconds: 5
+    network_timeout_in_seconds: 30
+    charset: UTF-8
+    tracker_servers: ${FASTDFS_TRACKER:127.0.0.1:22122}
