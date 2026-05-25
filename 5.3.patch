@@ -1,0 +1,218 @@
+diff --git a/.env b/.env
+new file mode 100644
+index 0000000..8e96c87
+--- /dev/null
++++ b/.env
+@@ -0,0 +1,34 @@
++MYSQL_HOST=mysql
++MYSQL_PORT=3306
++MYSQL_DB=caifeng
++MYSQL_USER=caifeng
++MYSQL_PASSWORD=root
++
++REDIS_HOST=redis
++REDIS_PORT=6379
++REDIS_PASSWORD=
++
++ZOOKEEPER_HOST=zookeeper
++ZOOKEEPER_PORT=2181
++
++MONGO_HOST=mongodb
++MONGO_PORT=27017
++MONGO_USER=caifeng
++MONGO_PASSWORD=caifEng666
++MONGO_DB=caifeng
++
++FASTDFS_HOST=fastdfs-tracker
++FASTDFS_PORT=22122
++
++OAUTH2_CLIENT_ID=caifeng
++OAUTH2_CLIENT_SECRET=caifeng
++COOKIE_DOMAIN=xuecheng.com
++
++HK_FORWARD_BASE_URL=http://192.168.3.19
++HK_FORWARD_LOCAL_IP=192.168.3.252
++HK_FORWARD_DEVICE_IP=192.168.3.249
++HK_FORWARD_PORT=8000
++
++DH_CAMERA_IP=192.168.3.200
++DH_CAMERA_SERVER=http://192.168.3.19:8089
++DH_LED_IP=192.168.3.250
+diff --git a/README.md b/README.md
+index 8eada52..543809c 100644
+--- a/README.md
++++ b/README.md
+@@ -84,4 +84,11 @@
+ 
+ 4．商城与营销功能 此功能主要考虑到使用者有运营周边的兴趣和能力，在商城和广告营销上进行盈利
+ 
+-安装教程 安装JDK1.8+ 安装MySQL5.6+ 安装MongoDB 安装Redis 安装FastDFS 安装Zookeeper 将打包好的代码上传到服务器上，直接运行jar包即可 详细安装教程文档地址 使用说明(swagger2文档) 国内领先水平 专业演示 旧版本(V2.0)演示地址已经停止, 最新版本是(V3.0),V3.0上面已经给APP和演示地址了 如果您发现有代码有什么不足之处请跟我留言，如果我留言不及时请加我个人微信Dove981011512(学生搞啥论文的以及个人小白不要加我，暂时没时间和精力帮忙，还望您见谅和理解)
++安装教程 安装JDK1.8+ 安装MySQL5.6+ 安装MongoDB 安装Redis 安装FastDFS 安装Zookeeper 将打包好的代码上传到服务器上，直接运行jar包即可
++
++### Docker Compose 部署
++
++项目已支持 Docker Compose 一键启动依赖环境（MySQL, Redis, Zookeeper, MongoDB, FastDFS）。
++1. 修改根目录下的 `.env` 文件，配置你的环境变量。
++2. 在根目录下执行 `docker-compose up -d` 即可启动所有基础组件。
++3. 微服务配置已统一提取至 `cf-framework-model` 中的 `bootstrap.yml`，本地开发无需任何配置即可兼容启动。 详细安装教程文档地址 使用说明(swagger2文档) 国内领先水平 专业演示 旧版本(V2.0)演示地址已经停止, 最新版本是(V3.0),V3.0上面已经给APP和演示地址了 如果您发现有代码有什么不足之处请跟我留言，如果我留言不及时请加我个人微信Dove981011512(学生搞啥论文的以及个人小白不要加我，暂时没时间和精力帮忙，还望您见谅和理解)
+diff --git a/apply_patch.py b/apply_patch.py
+new file mode 100644
+index 0000000..c2cf45d
+--- /dev/null
++++ b/apply_patch.py
+@@ -0,0 +1,47 @@
++import os
++import glob
++import re
++
++def process_yaml(content):
++    # 移除被抽取到 bootstrap.yml 的重复配置块
++    content = re.sub(r'\n  datasource:\n(?: {4}.*(?:\n|$))*', '\n', content)
++    content = re.sub(r'\n  redis:\n(?: {4}.*(?:\n|$))*', '\n', content)
++    content = re.sub(r'\n  data:\n(?: {4}.*(?:\n|$))*', '\n', content)
++    content = re.sub(r'\nauth:\n(?: {2}.*(?:\n|$))*', '\n', content)
++    content = re.sub(r'\n  registry:\n(?: {4}.*(?:\n|$))*', '\n', content)
++    content = re.sub(r'\n  fastdfs:\n(?: {4}.*(?:\n|$))*', '\n', content)
++    
++    # 清理空的父级块
++    content = re.sub(r'\ncf:\s*\n(?=[a-zA-Z#])', '\n', content)
++    content = re.sub(r'\ndubbo:\s*\n(?=[a-zA-Z#])', '\n', content)
++    
++    # 修复 cf-hk 和 cf-dh 中硬编码的 IP 地址
++    content = re.sub(r'baseUrl: http://192\.168\.3\.19', r'baseUrl: ${HK_FORWARD_BASE_URL:http://192.168.3.19}', content)
++    content = re.sub(r'localIP: 192\.168\.3\.252', r'localIP: ${HK_FORWARD_LOCAL_IP:192.168.3.252}', content)
++    content = re.sub(r'deviceIP: 192\.168\.3\.249', r'deviceIP: ${HK_FORWARD_DEVICE_IP:192.168.3.249}', content)
++    content = re.sub(r'port: 8000', r'port: ${HK_FORWARD_PORT:8000}', content)
++    
++    content = re.sub(r'ip: 192\.168\.3\.200', r'ip: ${DH_CAMERA_IP:192.168.3.200}', content)
++    content = re.sub(r'server: http://192\.168\.3\.19:8089', r'server: ${DH_CAMERA_SERVER:http://192.168.3.19:8089}', content)
++    content = re.sub(r'ip: 192\.168\.3\.250', r'ip: ${DH_LED_IP:192.168.3.250}', content)
++    
++    # 清理多余空行
++    content = re.sub(r'\n{3,}', '\n\n', content)
++    
++    return content
++
++files = glob.glob('/app/tingchechang/cf-framework-parent/**/*.yml', recursive=True)
++for f in files:
++    if 'bootstrap.yml' in f:
++        continue
++    with open(f, 'r', encoding='utf-8') as file:
++        content = file.read()
++    
++    new_content = process_yaml(content)
++    
++    if new_content != content:
++        with open(f, 'w', encoding='utf-8') as file:
++            file.write(new_content)
++        print(f"Updated {f}")
++
++print("All application.yml files updated successfully.")
+diff --git a/cf-framework-parent/cf-framework-model/src/main/resources/bootstrap.yml b/cf-framework-parent/cf-framework-model/src/main/resources/bootstrap.yml
+new file mode 100644
+index 0000000..347f568
+--- /dev/null
++++ b/cf-framework-parent/cf-framework-model/src/main/resources/bootstrap.yml
+@@ -0,0 +1,52 @@
++spring:
++  datasource:
++    name: caifeng
++    type: com.alibaba.druid.pool.DruidDataSource
++    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/${MYSQL_DB:caifeng}?characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false
++    username: ${MYSQL_USER:caifeng}
++    password: ${MYSQL_PASSWORD:root}
++    driver-class-name: com.mysql.jdbc.Driver
++    maxActive: 32
++    druid:
++      url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/${MYSQL_DB:caifeng}?characterEncoding=utf-8&useSSL=false
++      username: ${MYSQL_USER:caifeng}
++      password: ${MYSQL_PASSWORD:root}
++      driverClassName: com.mysql.jdbc.Driver
++      initialSize: 5
++      minIdle: 5
++      maxActive: 20
++      maxWait: 10000
++      testOnBorrow: true
++      testOnReturn: false
++      timeBetweenEvictionRunsMillis: 60000
++      minEvictableIdleTimeMillis: 300000
++  redis:
++    host: ${REDIS_HOST:127.0.0.1}
++    port: ${REDIS_PORT:6379}
++    password: ${REDIS_PASSWORD:}
++    database: ${REDIS_DB:0}
++    jedis:
++      pool:
++        maxActive: 20
++        maxIdle: 20
++        minIdle: 10
++        maxWait: -1
++  data:
++    mongodb:
++      uri: mongodb://${MONGO_USER:caifeng}:${MONGO_PASSWORD:caifEng666}@${MONGO_HOST:127.0.0.1}:${MONGO_PORT:27017}/?authSource=${MONGO_DB:caifeng}
++      database: ${MONGO_DB:caifeng}
++dubbo:
++  registry:
++    address: zookeeper://${ZOOKEEPER_HOST:127.0.0.1}:${ZOOKEEPER_PORT:2181}
++cf:
++  fastdfs:
++    connect_timeout_in_seconds: 5
++    network_timeout_in_seconds: 30
++    charset: UTF-8
++    tracker_servers: ${FASTDFS_HOST:127.0.0.1}:${FASTDFS_PORT:22122}
++auth:
++  tokenValiditySeconds: 1200
++  clientId: ${OAUTH2_CLIENT_ID:oauth2用户名，记得在对应的数据库配置用户名}
++  clientSecret: ${OAUTH2_CLIENT_SECRET:oauth2密码，记得在对应数据库配置密码}
++  cookieDomain: ${COOKIE_DOMAIN:xuecheng.com}
++  cookieMaxAge: -1
+diff --git a/docker-compose.yml b/docker-compose.yml
+new file mode 100644
+index 0000000..9ff41f8
+--- /dev/null
++++ b/docker-compose.yml
+@@ -0,0 +1,44 @@
++version: '3.8'
++
++services:
++  mysql:
++    image: mysql:5.7
++    container_name: cf-mysql
++    ports:
++      - "${MYSQL_PORT:-3306}:3306"
++    environment:
++      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD:-root}
++      MYSQL_DATABASE: ${MYSQL_DB:-caifeng}
++      MYSQL_USER: ${MYSQL_USER:-caifeng}
++      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-root}
++    volumes:
++      - ./mysql-data:/var/lib/mysql
++
++  redis:
++    image: redis:6.2
++    container_name: cf-redis
++    ports:
++      - "${REDIS_PORT:-6379}:6379"
++    command: redis-server --requirepass ${REDIS_PASSWORD:-}
++
++  zookeeper:
++    image: zookeeper:3.5
++    container_name: cf-zookeeper
++    ports:
++      - "${ZOOKEEPER_PORT:-2181}:2181"
++
++  mongodb:
++    image: mongo:4.4
++    container_name: cf-mongodb
++    ports:
++      - "${MONGO_PORT:-27017}:27017"
++    environment:
++      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-caifeng}
++      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-caifEng666}
++
++  fastdfs-tracker:
++    image: delron/fastdfs
++    container_name: cf-fastdfs-tracker
++    ports:
++      - "${FASTDFS_PORT:-22122}:22122"
++    command: tracker
