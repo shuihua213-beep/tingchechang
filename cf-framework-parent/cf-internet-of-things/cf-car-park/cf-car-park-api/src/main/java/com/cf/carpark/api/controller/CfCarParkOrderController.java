@@ -62,6 +62,13 @@ public class CfCarParkOrderController implements CfCarParkOrderSwagger {
     @Autowired
     protected HttpServletRequest request;
 
+    private BigDecimal normalizeAmount(BigDecimal amount) {
+        if(amount == null){
+            return new BigDecimal("0.00");
+        }
+        return amount.setScale(2, BigDecimal.ROUND_DOWN);
+    }
+
     @Override
     @RequestMapping(value = "queryOrderByUseId", method = RequestMethod.GET)
     public ResponseResult queryOrderByUseId(String id, String couponId, String useCoupon) throws Exception {
@@ -72,8 +79,8 @@ public class CfCarParkOrderController implements CfCarParkOrderSwagger {
         CfCarParkOrder cfCarParkOrder = cfCarParkChargingRulesService.calculateTheAmounPayable(id, "", FeeQueryMode.QUERY_MODE_QUERY_ONLY);
         CfOrder cfOrder = cfCarParkOrder.getCfOrder();
         if(System.currentTimeMillis()-cfOrder.getManualOfferSetTime()<=900000){
-            BigDecimal amountsPayable = cfOrder.getAmountsPayable();
-            cfOrder.setAmountsPayable(amountsPayable.subtract(cfOrder.getManualOffer()));
+            BigDecimal amountsPayable = normalizeAmount(cfOrder.getAmountsPayable());
+            cfOrder.setAmountsPayable(normalizeAmount(amountsPayable.subtract(normalizeAmount(cfOrder.getManualOffer()))));
         }else{
             cfOrder.setAmountsPayable(cfCarParkOrder.getCfOrder().getAmountsPayable());
         }
@@ -120,7 +127,7 @@ public class CfCarParkOrderController implements CfCarParkOrderSwagger {
                         usedCoupon = false;
                     }
                     if(cfCoupon.getCouponType()==(byte)1 ||
-                            (cfCoupon.getCouponType()==(byte)2 && cfCoupon.getDenomination().doubleValue()>=cfCarParkOrder.getCfOrder().getAmountsPayable().doubleValue()) ||
+                            (cfCoupon.getCouponType()==(byte)2 && normalizeAmount(cfCoupon.getDenomination()).compareTo(normalizeAmount(cfCarParkOrder.getCfOrder().getAmountsPayable()))>=0) ||
                             (cfCoupon.getCouponType()==(byte)3 && cfCoupon.getDenomination().longValue()+cfCarParkOrder.getCfCarParkUseLog().getInTime()>=cfCarParkOrder.getCfCarParkUseLog().getOutTime())
                     ){
                         //禁止手动优惠券全额支付
@@ -128,7 +135,7 @@ public class CfCarParkOrderController implements CfCarParkOrderSwagger {
                     }else if(usedCoupon){
                         if(cfCoupon.getCouponType()==(byte)2){
                             cfCarParkOrder.getCfOrder().setAmountsPayable(
-                                    cfCarParkOrder.getCfOrder().getAmountsPayable().subtract(cfCoupon.getDenomination())
+                                    normalizeAmount(normalizeAmount(cfCarParkOrder.getCfOrder().getAmountsPayable()).subtract(normalizeAmount(cfCoupon.getDenomination())))
                             );
                         }
                     }

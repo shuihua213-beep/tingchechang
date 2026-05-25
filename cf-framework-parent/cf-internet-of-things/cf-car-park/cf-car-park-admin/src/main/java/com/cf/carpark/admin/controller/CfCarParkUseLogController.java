@@ -81,6 +81,14 @@ public class CfCarParkUseLogController implements CfCarParkUseLogSwagger {
     private CfCarParkChargingRulesService cfCarParkChargingRulesService;
     @Autowired
     protected HttpServletRequest request;
+
+    private BigDecimal normalizeAmount(BigDecimal amount) {
+        if(amount == null){
+            return new BigDecimal("0.00");
+        }
+        return amount.setScale(2, BigDecimal.ROUND_DOWN);
+    }
+
     @Reference(version = "1.0.0", retries = 0, timeout = 30000, check = false)
     private CfCarParkLinkUserService cfCarParkLinkUserService;
     @Reference(version = "1.0.0", retries = 0, timeout = 30000, check = false)
@@ -159,10 +167,10 @@ public class CfCarParkUseLogController implements CfCarParkUseLogSwagger {
             return new ResponseResult(CommonCode.FAIL, null,"该订单已支付");
         }
 
-        if((updateLogAndOrderForm.getActionType().equals("cash_pay") || updateLogAndOrderForm.getActionType().equals("abnormal_termination_of_order")) && StringUtils.isNotEmpty(updateLogAndOrderForm.getAmountOfMoney()) && (new BigDecimal(updateLogAndOrderForm.getAmountOfMoney())).doubleValue()>=0){
+        if((updateLogAndOrderForm.getActionType().equals("cash_pay") || updateLogAndOrderForm.getActionType().equals("abnormal_termination_of_order")) && StringUtils.isNotEmpty(updateLogAndOrderForm.getAmountOfMoney()) && (new BigDecimal(updateLogAndOrderForm.getAmountOfMoney())).compareTo(BigDecimal.ZERO)>=0){
             //暂时不允许收费自己修改金额
 //            cfOrder.setAmountActuallyPaid(new BigDecimal(amountOfMoney).add(cfOrder.getCollectionAmount()));
-//            if(cfOrder.getCollectionAmount().doubleValue()>0){
+//            if(normalizeAmount(cfOrder.getCollectionAmount()).compareTo(BigDecimal.ZERO)>0){
 //                cfOrder.setAmountActuallyPaid(cfOrder.getCollectionAmount().add(cfOrder.getAmountsPayable()));
 //            }
 //            if(cfOrder.getAmountsPayable().doubleValue()==0){
@@ -170,8 +178,8 @@ public class CfCarParkUseLogController implements CfCarParkUseLogSwagger {
 //            }
 
             if(System.currentTimeMillis()-cfOrder.getManualOfferSetTime()<=900000){
-                BigDecimal amountsPayable = cfOrder.getAmountsPayable();
-                cfOrder.setAmountsPayable(amountsPayable.subtract(cfOrder.getManualOffer()));
+                BigDecimal amountsPayable = normalizeAmount(cfOrder.getAmountsPayable());
+                cfOrder.setAmountsPayable(normalizeAmount(amountsPayable.subtract(normalizeAmount(cfOrder.getManualOffer()))));
                 cfOrder.setAmountActuallyPaid(cfOrder.getAmountsPayable());
             }else if(StringUtils.isNotEmpty(updateLogAndOrderForm.getCouponId())){
                 CfCoupon cfCoupon = cfCouponService.findById(updateLogAndOrderForm.getCouponId(), false);
@@ -179,22 +187,22 @@ public class CfCarParkUseLogController implements CfCarParkUseLogSwagger {
                     CfCoupon coupon = new CfCoupon();
                     coupon.setId(updateLogAndOrderForm.getCouponId());
                     coupon.setUseTime(System.currentTimeMillis());
-                    if(cfOrder.getAmountsPayable().doubleValue()<cfCoupon.getDenomination().doubleValue()){
-                        coupon.setAmountUsed(cfOrder.getAmountsPayable());
+                    if(normalizeAmount(cfOrder.getAmountsPayable()).compareTo(normalizeAmount(cfCoupon.getDenomination()))<0){
+                        coupon.setAmountUsed(normalizeAmount(cfOrder.getAmountsPayable()));
                     }else{
-                        coupon.setAmountUsed(cfCoupon.getDenomination());
+                        coupon.setAmountUsed(normalizeAmount(cfCoupon.getDenomination()));
                     }
                     coupon.setStatus(CouponStatus.USED);
                     cfCouponService.updateByPrimaryKeySelective(coupon);
 
                     cfOrder.setCouponId(updateLogAndOrderForm.getCouponId());
 
-                    if(cfOrder.getAmountsPayable().doubleValue()<cfCoupon.getDenomination().doubleValue()){
-                        cfOrder.setCouponPaid(cfOrder.getAmountsPayable());
-                        cfOrder.setAmountActuallyPaid(new BigDecimal(0.00));
+                    if(normalizeAmount(cfOrder.getAmountsPayable()).compareTo(normalizeAmount(cfCoupon.getDenomination()))<0){
+                        cfOrder.setCouponPaid(normalizeAmount(cfOrder.getAmountsPayable()));
+                        cfOrder.setAmountActuallyPaid(new BigDecimal("0.00"));
                     }else{
-                        cfOrder.setCouponPaid(cfCoupon.getDenomination());
-                        cfOrder.setAmountActuallyPaid(cfOrder.getAmountsPayable().subtract(cfCoupon.getDenomination()));
+                        cfOrder.setCouponPaid(normalizeAmount(cfCoupon.getDenomination()));
+                        cfOrder.setAmountActuallyPaid(normalizeAmount(cfOrder.getAmountsPayable()).subtract(normalizeAmount(cfCoupon.getDenomination())));
                     }
                 }
             }else{
@@ -216,7 +224,7 @@ public class CfCarParkUseLogController implements CfCarParkUseLogSwagger {
                 }
             }
 
-            if(cfOrder.getCollectionAmount().doubleValue()>0){
+            if(normalizeAmount(cfOrder.getCollectionAmount()).compareTo(BigDecimal.ZERO)>0){
                 //更新停车记录支付时间(因为存在代付金额时，当前停车记录支付时间会被临时置为0)
                 CfCarParkUseLog carParkUseLog = new CfCarParkUseLog();
                 carParkUseLog.setId(cfCarParkUseLog.getId());

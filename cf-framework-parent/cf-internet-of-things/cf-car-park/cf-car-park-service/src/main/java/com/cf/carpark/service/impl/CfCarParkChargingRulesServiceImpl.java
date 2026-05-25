@@ -92,6 +92,23 @@ public class CfCarParkChargingRulesServiceImpl implements CfCarParkChargingRules
     @Reference(version = "1.0.0", retries = 0, timeout = 5000, check = false)
     private CfUserPaymentAgencyService cfUserPaymentAgencyService;
 
+    private static final BigDecimal ZERO_AMOUNT = new BigDecimal("0.00");
+
+    private BigDecimal normalizeAmount(BigDecimal amount) {
+        if(amount == null){
+            return ZERO_AMOUNT;
+        }
+        return amount.setScale(2, RoundingMode.DOWN);
+    }
+
+    private boolean isPositiveAmount(BigDecimal amount) {
+        return normalizeAmount(amount).compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    private boolean isZeroAmount(BigDecimal amount) {
+        return normalizeAmount(amount).compareTo(BigDecimal.ZERO) == 0;
+    }
+
     @Override
     public ResultMap calculateTheAmounPayableAndHandlePay(String cfCarParkUseLogId, String uid, String payTypeId, String ipAddress) throws Exception{
 
@@ -171,7 +188,7 @@ public class CfCarParkChargingRulesServiceImpl implements CfCarParkChargingRules
                 ExceptionCast.cast(PayCode.COUPON_USAGE_SCENARIOS_DO_NOT_MATCH);
             }
             if((cfCoupon.getCouponType()==(byte)1 && cfCoupon.getDenomination().intValue()>0) ||
-                    (cfCoupon.getCouponType()==(byte)2 && cfCoupon.getDenomination().doubleValue()>=cfCarParkOrder.getCfOrder().getAmountsPayable().doubleValue()) ||
+                    (cfCoupon.getCouponType()==(byte)2 && normalizeAmount(cfCoupon.getDenomination()).compareTo(normalizeAmount(cfCarParkOrder.getCfOrder().getAmountsPayable()))>=0) ||
                     (cfCoupon.getCouponType()==(byte)3 && cfCoupon.getDenomination().longValue()+cfCarParkUseLog.getInTime()>=cfCarParkUseLog.getOutTime())
             ){
 
@@ -214,7 +231,7 @@ public class CfCarParkChargingRulesServiceImpl implements CfCarParkChargingRules
         cfOrderQuery.setEffectObject(cfCarParkUseLog.getNumberPlate());
         List<CfOrder> cfOrders = cfOrderService.getListByQuery(cfOrderQuery);
         //合计代付总金额
-        BigDecimal totalCollectionFee = new BigDecimal(0.00);
+        BigDecimal totalCollectionFee = ZERO_AMOUNT;
         if(queryMode.equals(FeeQueryMode.QUERY_MODE_QUERY_AND_UPDATE) && cfOrders!=null && cfOrders.size()>0){
             CfOrder order = new CfOrder();
             order.setCollectionOrderId(cfCarParkOrder.getCfOrder().getId());
@@ -229,7 +246,7 @@ public class CfCarParkChargingRulesServiceImpl implements CfCarParkChargingRules
             cfCarParkOrder.getCfOrder().setCollectionAmount(totalCollectionFee.add(cfCarParkOrder.getCfOrder().getCollectionAmount()));
         }
 
-        if(queryMode.equals(FeeQueryMode.QUERY_MODE_QUERY_AND_UPDATE) && totalCollectionFee.doubleValue()>0 && cfCarParkOrder.getCfOrder().getStatus()==PayStatus.TO_BE_PAID){
+        if(queryMode.equals(FeeQueryMode.QUERY_MODE_QUERY_AND_UPDATE) && isPositiveAmount(totalCollectionFee) && cfCarParkOrder.getCfOrder().getStatus()==PayStatus.TO_BE_PAID){
             cfCarParkOrder.getCfOrder().setPayTime(0l);
 
             //更新订单和停车记录
@@ -252,7 +269,7 @@ public class CfCarParkChargingRulesServiceImpl implements CfCarParkChargingRules
             cfCarParkOrder.getCfOrder().setAmountsPayable(cfCarParkOrder.getCfOrder().getAmountsPayable().add(cfCarParkOrder.getCfOrder().getCollectionAmount()));
         }
 
-        if(queryMode.equals(FeeQueryMode.QUERY_MODE_QUERY_AND_UPDATE) && cfCarParkUseLog.getPayTime()>0 && cfCarParkOrder.getCfOrder().getStatus()==PayStatus.TO_BE_PAID && cfCarParkOrder.getCfOrder().getCollectionAmount().doubleValue()==0){
+        if(queryMode.equals(FeeQueryMode.QUERY_MODE_QUERY_AND_UPDATE) && cfCarParkUseLog.getPayTime()>0 && cfCarParkOrder.getCfOrder().getStatus()==PayStatus.TO_BE_PAID && isZeroAmount(cfCarParkOrder.getCfOrder().getCollectionAmount())){
             cfCarParkOrder.getCfOrder().setPayTime(System.currentTimeMillis());
             cfCarParkOrder.getCfOrder().setStatus(PayStatus.PAID);
             cfOrderService.update(cfCarParkOrder.getCfOrder());
@@ -265,7 +282,7 @@ public class CfCarParkChargingRulesServiceImpl implements CfCarParkChargingRules
             return cfCarParkOrder;
         }
 
-        if(System.currentTimeMillis()-cfCarParkOrder.getCfOrder().getManualOfferSetTime()<=900000 && cfCarParkOrder.getCfOrder().getManualOffer().doubleValue()>0){
+        if(System.currentTimeMillis()-cfCarParkOrder.getCfOrder().getManualOfferSetTime()<=900000 && isPositiveAmount(cfCarParkOrder.getCfOrder().getManualOffer())){
             cfCarParkOrder.setCfOrder(cfCarParkOrder.getCfOrder());
             return cfCarParkOrder;
         }
@@ -293,7 +310,7 @@ public class CfCarParkChargingRulesServiceImpl implements CfCarParkChargingRules
             }
         }
 
-        if(queryMode.equals(FeeQueryMode.QUERY_MODE_QUERY_AND_UPDATE) && cfCarParkOrder.getCfOrder().getPayTime()>0 && cfCarParkOrder.getCfOrder().getStatus()==PayStatus.TO_BE_PAID && cfCarParkOrder.getCfOrder().getCollectionAmount().doubleValue()==0){
+        if(queryMode.equals(FeeQueryMode.QUERY_MODE_QUERY_AND_UPDATE) && cfCarParkOrder.getCfOrder().getPayTime()>0 && cfCarParkOrder.getCfOrder().getStatus()==PayStatus.TO_BE_PAID && isZeroAmount(cfCarParkOrder.getCfOrder().getCollectionAmount())){
             cfCarParkOrder.getCfOrder().setStatus(PayStatus.PAID);
             cfCarParkOrder.setCfOrder(cfOrderService.update(cfCarParkOrder.getCfOrder()));
             //更新停车记录支付时间
@@ -505,7 +522,7 @@ public class CfCarParkChargingRulesServiceImpl implements CfCarParkChargingRules
             if(cfCarParkUseLog.getCfCarParkCarLimit().getGiveFreeTime()==(byte)1){
                 giveTime = freeTime;
             }
-            if(cfCarParkUseLog.getCfCarParkCarLimit().getFeeUpperLimit().doubleValue()>0){
+            if(isPositiveAmount(cfCarParkUseLog.getCfCarParkCarLimit().getFeeUpperLimit())){
                 cfCarPark.setFeeUpperLimit(cfCarParkUseLog.getCfCarParkCarLimit().getFeeUpperLimit());
             }
         }
@@ -643,26 +660,26 @@ public class CfCarParkChargingRulesServiceImpl implements CfCarParkChargingRules
                     if(newEstStartTime<cfCarParkUseLog.getInTime()){
                         newEstStartTime = cfCarParkUseLog.getInTime();
                     }
-                    if(cfCarPark.getFeeUpperLimit().doubleValue()>0 && orderList.get(orderList.size()-1).getAmountsPayable().doubleValue()<cfCarPark.getFeeUpperLimit().doubleValue() && newEstStartTime>cfCarParkUseLog.getInTime()){
-                        //本次24小时内，并且收费未达到费用上限
+                    BigDecimal feeUpperLimit = normalizeAmount(cfCarPark.getFeeUpperLimit());
+                    if(isPositiveAmount(feeUpperLimit) && normalizeAmount(orderList.get(orderList.size()-1).getAmountsPayable()).compareTo(feeUpperLimit)<0 && newEstStartTime>cfCarParkUseLog.getInTime()){
                         newEstStartTime = cfCarParkUseLog.getInTime();
                         countPayTime = cfCarParkUseLog.getOutTime()-86400000l;
                     }
                     if(newEstStartTime<cfCarParkUseLog.getOutTime() && (cfCarParkUseLog.getOutTime() - newEstStartTime>cfCarPark.getFreeTime())){
-                        //已经超过上次24小时免费期
-                        BigDecimal totalPaid = new BigDecimal("0.00");
+                        BigDecimal totalPaid = ZERO_AMOUNT;
                         if(orderList!=null && orderList.size()>0){
                             for(CfOrder order: orderList){
                                 if(order.getPayTime()>=countPayTime){
-                                    totalPaid = totalPaid.add(order.getAmountsPayable());
+                                    totalPaid = totalPaid.add(normalizeAmount(order.getAmountsPayable()));
                                 }
                             }
                         }
 
-                        if(cfCarPark.getFeeUpperLimit().doubleValue()>0 && totalPaid.doubleValue()<cfCarPark.getFeeUpperLimit().doubleValue()){
+                        if(isPositiveAmount(feeUpperLimit) && totalPaid.compareTo(feeUpperLimit)<0){
                             totalFee = dynamic24HoursCalculateTheAmounPayable(outTime-newEstStartTime-giveTime, 0l, currentCalculateingCarType, calculateingCfCarPark, 0, carParkChargingRules, 0d);
-                            if(totalPaid.doubleValue()>0 && totalPaid.doubleValue()+totalFee>cfCarPark.getFeeUpperLimit().doubleValue()){
-                                totalFee = cfCarPark.getFeeUpperLimit().doubleValue() - totalPaid.doubleValue();
+                            BigDecimal remainingFee = feeUpperLimit.subtract(totalPaid);
+                            if(isPositiveAmount(totalPaid) && BigDecimal.valueOf(totalFee).compareTo(remainingFee)>0){
+                                totalFee = remainingFee.doubleValue();
                             }
                         }else{
                             totalFee = 0d;
@@ -685,14 +702,15 @@ public class CfCarParkChargingRulesServiceImpl implements CfCarParkChargingRules
             }
         }
 
-        if(totalFee==0 && cfOrder.getStatus()==PayStatus.TO_BE_PAID && cfOrder.getCollectionAmount().doubleValue()==0){
+        BigDecimal calculatedTotalFee = BigDecimal.valueOf(totalFee).setScale(2, RoundingMode.DOWN);
+        if(calculatedTotalFee.compareTo(BigDecimal.ZERO)==0 && cfOrder.getStatus()==PayStatus.TO_BE_PAID && isZeroAmount(cfOrder.getCollectionAmount())){
             cfCarParkUseLog.setPayTime(System.currentTimeMillis());
             cfOrder.setPaymentAgencyShortName("system_free_time");
             cfOrder.setPayTime(cfCarParkUseLog.getPayTime());
         }
 
         if(cfOrder.getStatus()==PayStatus.TO_BE_PAID) {
-            cfOrder.setAmountsPayable((new BigDecimal(totalFee.toString())).setScale(2, RoundingMode.DOWN));
+            cfOrder.setAmountsPayable(calculatedTotalFee);
         }
 
         cfCarParkOrder.setCfCarParkPackage(cfCarParkPackage);
@@ -705,7 +723,7 @@ public class CfCarParkChargingRulesServiceImpl implements CfCarParkChargingRules
         }
 
         //如果费用为0则不存在代付，不标记代付
-        if(cfOrder.getAmountsPayable().doubleValue()==0 && cfOrder.getStatus()==PayStatus.TO_BE_PAID){
+        if(isZeroAmount(cfOrder.getAmountsPayable()) && cfOrder.getStatus()==PayStatus.TO_BE_PAID){
             cfOrder.setCollectionShopId("");
             cfOrder.setCollectionOrderId("");
         }
@@ -1077,7 +1095,7 @@ public class CfCarParkChargingRulesServiceImpl implements CfCarParkChargingRules
                 //将优惠券直接使用掉
                 cfCoupons.get(0).setUseTime(System.currentTimeMillis());
                 cfCouponService.update(cfCoupons.get(0));
-            }else if(cfCoupons.get(0).getCouponType()==(byte)2 && amountsPayable.doubleValue()<=cfCoupons.get(0).getDenomination().doubleValue()){
+            }else if(cfCoupons.get(0).getCouponType()==(byte)2 && normalizeAmount(amountsPayable).compareTo(normalizeAmount(cfCoupons.get(0).getDenomination()))<=0){
                 //券完全抵扣
                 cfOrder.setStatus(PayStatus.PAID);
                 cfOrder.setPayTime(System.currentTimeMillis());
@@ -1092,7 +1110,7 @@ public class CfCarParkChargingRulesServiceImpl implements CfCarParkChargingRules
                 //将优惠券直接使用掉
                 cfCoupons.get(0).setUseTime(System.currentTimeMillis());
                 cfCouponService.update(cfCoupons.get(0));
-            }else if(cfCoupons.get(0).getCouponType()==(byte)2 && amountsPayable.doubleValue()>cfCoupons.get(0).getDenomination().doubleValue()){
+            }else if(cfCoupons.get(0).getCouponType()==(byte)2 && normalizeAmount(amountsPayable).compareTo(normalizeAmount(cfCoupons.get(0).getDenomination()))>0){
                 //券部分抵扣
                 cfOrder.setCouponPaid(cfCoupons.get(0).getDenomination());
                 cfOrder.setCouponId(cfCoupons.get(0).getId());
@@ -1103,7 +1121,7 @@ public class CfCarParkChargingRulesServiceImpl implements CfCarParkChargingRules
 
     @Override
     public CfOrder scannedChargeback(CfOrder cfOrder, CfUserPaymentAgency cfUserPaymentAgency, CCBScannedChargebackForm ccbScannedChargebackForm) throws Exception {
-        if(cfOrder.getAmountsPayable().doubleValue()==0){
+        if(isZeroAmount(cfOrder.getAmountsPayable())){
             return cfOrder;
         }
         ccbScannedChargebackForm.setTXCODE("PAY100");
@@ -1115,7 +1133,7 @@ public class CfCarParkChargingRulesServiceImpl implements CfCarParkChargingRules
 
     @Override
     public CfOrder secretFreePayment(CfOrder cfOrder, CfUserPaymentAgency cfUserPaymentAgency, CCBScannedChargebackForm ccbScannedChargebackForm) throws Exception {
-        if(cfOrder.getAmountsPayable().doubleValue()==0){
+        if(isZeroAmount(cfOrder.getAmountsPayable())){
             return cfOrder;
         }
         //先检查是否存在无感支付
