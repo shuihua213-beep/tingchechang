@@ -5,6 +5,7 @@ import com.cf.framework.domain.report.CountByDay;
 import com.cf.framework.domain.response.CommonCode;
 import com.cf.framework.domain.response.ResponseResult;
 import com.cf.framework.domain.ucenter.ext.UserBasicInfo;
+import com.cf.framework.utils.DateUtil;
 import com.cf.framework.utils.HttpHearderUtils;
 import com.cf.ucenter.admin.config.AuthenticationInterceptor;
 import com.cf.ucenter.admin.swagger.UcenterSwagger;
@@ -14,6 +15,10 @@ import com.cf.ucenter.request.CfUserForm;
 import com.cf.ucenter.request.CfUserQuery;
 import com.cf.ucenter.service.CfUserService;
 import org.apache.dubbo.config.annotation.Reference;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,9 +26,11 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -130,6 +137,79 @@ public class UcenterController implements UcenterSwagger {
             return new ResponseResult(CommonCode.SUCCESS, cfCarParks, null, counts);
         }
         return new ResponseResult(CommonCode.NO_MORE_DATAS);
+    }
+
+    @PreAuthorize("hasAuthority('ucenter-UcenterController-selectListByCondition')")
+    @Override
+    @RequestMapping(value = "exportUserExcel", method = RequestMethod.GET)
+    public void exportUserExcel(HttpServletResponse response, String conditions) throws Exception {
+        Map conditionsMap = (JSONObject.parseObject(conditions));
+        ArrayList<String> allowFileds = new ArrayList<>();
+        allowFileds.add("id");
+        allowFileds.add("user_name");
+        allowFileds.add("type");
+        allowFileds.add("nick_name");
+        allowFileds.add("true_name");
+        allowFileds.add("phone");
+        allowFileds.add("sex");
+        allowFileds.add("create_time");
+        allowFileds.add("like");
+        allowFileds.add("order");
+        Map<String, String> allowFiledsMap = new HashMap<String, String>();
+        allowFiledsMap.put("id","u");
+        allowFiledsMap.put("user_name","u");
+        allowFiledsMap.put("type","u");
+        allowFiledsMap.put("nick_name","u");
+        allowFiledsMap.put("true_name","u");
+        allowFiledsMap.put("phone","u");
+        allowFiledsMap.put("sex","u");
+        allowFiledsMap.put("create_time","u");
+        allowFiledsMap.put("like","");
+        allowFiledsMap.put("order","");
+
+        int totalCount = cfUserService.selectListByConditionCounts(conditionsMap, allowFiledsMap, allowFileds);
+        String fileName = "用户列表";
+        fileName = new String(fileName.getBytes("UTF-8"), "ISO8859-1");
+        response.setContentType("application/octet-stream;charset=UTF-8");
+        response.setHeader("Content-Disposition", "attachment;filename=" + fileName + ".xlsx");
+        response.addHeader("Pargam", "no-cache");
+        response.addHeader("Cache-Control", "no-cache");
+
+        int pageSize = 5000;
+        int totalPages = (totalCount + pageSize - 1) / pageSize;
+        SXSSFWorkbook wb = new SXSSFWorkbook(100);
+        Sheet sheet1 = wb.createSheet("sheet1");
+        Row titleRow = sheet1.createRow(0);
+        String[] headers = {"序号", "用户ID", "用户名", "昵称", "真实姓名", "手机号", "性别", "用户类型", "注册时间"};
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = titleRow.createCell(i);
+            cell.setCellValue(headers[i]);
+        }
+        int excelRow = 1;
+        int sequence = 1;
+        for (int page = 1; page <= totalPages; page++) {
+            List<CfUser> pageData = cfUserService.selectListByConditionPage(
+                    conditionsMap, allowFiledsMap, allowFileds, page, pageSize);
+            if (pageData != null) {
+                for (CfUser cfUser : pageData) {
+                    Row dataRow = sheet1.createRow(excelRow++);
+                    dataRow.createCell(0).setCellValue(sequence++);
+                    dataRow.createCell(1).setCellValue(cfUser.getId() != null ? cfUser.getId() : "");
+                    dataRow.createCell(2).setCellValue(cfUser.getUserName() != null ? cfUser.getUserName() : "");
+                    dataRow.createCell(3).setCellValue(cfUser.getNickName() != null ? cfUser.getNickName() : "");
+                    dataRow.createCell(4).setCellValue(cfUser.getTrueName() != null ? cfUser.getTrueName() : "");
+                    dataRow.createCell(5).setCellValue(cfUser.getPhone() != null ? cfUser.getPhone() : "");
+                    dataRow.createCell(6).setCellValue(cfUser.getSex() == null ? "保密" : cfUser.getSex() == 1 ? "男" : cfUser.getSex() == 2 ? "女" : "保密");
+                    dataRow.createCell(7).setCellValue(cfUser.getType() == null ? "普通用户" : cfUser.getType() == 1 ? "管理员" : "普通用户");
+                    dataRow.createCell(8).setCellValue(cfUser.getCreateTime() != null ? DateUtil.stampToDate(cfUser.getCreateTime(), "yyyy-MM-dd HH:mm:ss") : "");
+                }
+            }
+        }
+        OutputStream os = response.getOutputStream();
+        wb.write(os);
+        os.flush();
+        os.close();
+        wb.dispose();
     }
 
     @PreAuthorize("hasAuthority('ucenter-UcenterController-update')")

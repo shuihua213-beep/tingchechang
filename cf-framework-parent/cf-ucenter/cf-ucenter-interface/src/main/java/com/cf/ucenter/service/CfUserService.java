@@ -104,6 +104,17 @@ public interface CfUserService {
     public Integer selectListByConditionCounts(Map<String, Map<String, Object>> conditions, Map<String, String> allowFiledsMap, List<String> allowFileds);
 
     /**
+     * 根据条件分页查询用户数据列表（用于大数据量导出，不加载角色信息）
+     * @param conditions 查询条件
+     * @param allowFiledsMap 允许字段映射
+     * @param allowFileds 允许字段列表
+     * @param page 页码（从1开始）
+     * @param pageSize 每页记录数
+     * @return 用户列表
+     */
+    public List<CfUser> selectListByConditionPage(Map<String, Map<String, Object>> conditions, Map<String, String> allowFiledsMap, List<String> allowFileds, int page, int pageSize);
+
+    /**
      * 更新用户信息
      * @param cfUser
      * @return

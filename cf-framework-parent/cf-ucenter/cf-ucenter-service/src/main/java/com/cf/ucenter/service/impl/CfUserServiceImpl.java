@@ -204,6 +204,16 @@ public class CfUserServiceImpl implements CfUserService {
     }
 
     @Override
+    public List<CfUser> selectListByConditionPage(Map<String, Map<String, Object>> conditions, Map<String, String> allowFiledsMap, List<String> allowFileds, int page, int pageSize) {
+        String sql = "SELECT u.id,u.user_name,u.avatar,u.type,u.nick_name,u.true_name,u.phone,u.email,u.birthday,u.sex,u.sign,u.create_time FROM cf_user u";
+        List<String> pageAllowFileds = new ArrayList<>(allowFileds);
+        pageAllowFileds.remove("limit");
+        sql = DbUtils.makeQuery(conditions, allowFiledsMap, pageAllowFileds, sql, false);
+        sql += " LIMIT " + ((page - 1) * pageSize) + "," + pageSize;
+        return cfUserMapper.selectListByCondition(sql);
+    }
+
+    @Override
     public CfUser update(CfUser cfUser) {
         if(StringUtils.isEmpty(cfUser.getPassword())){
             cfUser.setPassword(null);
