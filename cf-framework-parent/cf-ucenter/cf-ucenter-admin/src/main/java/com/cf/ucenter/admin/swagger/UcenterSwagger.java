@@ -10,6 +10,7 @@ import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.*;
 
 /**
@@ -91,4 +92,10 @@ public interface UcenterSwagger {
     })
     public ResponseResult countAddLogs(CfCountUserQuery cfCountUserQuery);
 
+    @ApiOperation(value = "导出用户列表Excel")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name="authorization",value = "jwt串(请加\"Bearer \"前缀，注意有空格)",required=true,paramType="header",dataType="string"),
+            @ApiImplicitParam(name="conditions", value = "条件", required=true, paramType="query", dataType="string")
+    })
+    public void exportUserExcel(HttpServletResponse response, String conditions) throws Exception;
 }

@@ -21,13 +21,19 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.alibaba.excel.EasyExcel;
+import com.alibaba.excel.ExcelWriter;
+import com.alibaba.excel.write.metadata.WriteSheet;
 
 /**
  * 请在此填写描述
@@ -194,5 +200,65 @@ public class UcenterController implements UcenterSwagger {
             return new ResponseResult(CommonCode.NO_MORE_DATAS);
         }
         return new ResponseResult(CommonCode.SUCCESS, list, cfUserService.getCountByQuery(new CfUserQuery()));
+    }
+
+    @PreAuthorize("hasAuthority('ucenter-UcenterController-selectListByCondition')")
+    @Override
+    @RequestMapping(value = "exportUserExcel", method = RequestMethod.GET)
+    public void exportUserExcel(HttpServletResponse response, String conditions) throws Exception {
+        Map conditionsMap = (JSONObject.parseObject(conditions));
+        ArrayList<String> allowFileds = new ArrayList<>();
+        allowFileds.add("id");
+        allowFileds.add("user_name");
+        allowFileds.add("type");
+        allowFileds.add("nick_name");
+        allowFileds.add("true_name");
+        allowFileds.add("phone");
+        allowFileds.add("sex");
+        allowFileds.add("create_time");
+        Map<String, String> allowFiledsMap = new HashMap<>();
+        allowFiledsMap.put("id", "u");
+        allowFiledsMap.put("user_name", "u");
+        allowFiledsMap.put("type", "u");
+        allowFiledsMap.put("nick_name", "u");
+        allowFiledsMap.put("true_name", "u");
+        allowFiledsMap.put("phone", "u");
+        allowFiledsMap.put("sex", "u");
+        allowFiledsMap.put("create_time", "u");
+
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setCharacterEncoding("utf-8");
+        String fileName = URLEncoder.encode("用户列表", "UTF-8").replaceAll("\\+", "%20");
+        response.setHeader("Content-disposition", "attachment;filename*=utf-8''" + fileName + ".xlsx");
+
+        ExcelWriter excelWriter = null;
+        try {
+            excelWriter = EasyExcel.write(response.getOutputStream(), CfUser.class).build();
+            WriteSheet writeSheet = EasyExcel.writerSheet("用户数据").build();
+
+            int page = 1;
+            int limit = 1000;
+            while (true) {
+                Map<String, Object> limitMap = new HashMap<>();
+                limitMap.put("operator", "limit");
+                limitMap.put("page", page);
+                limitMap.put("limit", limit);
+                conditionsMap.put("limit", limitMap);
+
+                List<CfUser> cfUsers = cfUserService.selectListByCondition(conditionsMap, allowFiledsMap, allowFileds);
+                if (cfUsers == null || cfUsers.isEmpty()) {
+                    break;
+                }
+                excelWriter.write(cfUsers, writeSheet);
+                if (cfUsers.size() < limit) {
+                    break;
+                }
+                page++;
+            }
+        } finally {
+            if (excelWriter != null) {
+                excelWriter.finish();
+            }
+        }
     }
 }
