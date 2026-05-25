@@ -1,0 +1,141 @@
+diff --git a/cf-framework-parent/cf-framework-utils/pom.xml b/cf-framework-parent/cf-framework-utils/pom.xml
+index acbeeac..15c3e2c 100644
+--- a/cf-framework-parent/cf-framework-utils/pom.xml
++++ b/cf-framework-parent/cf-framework-utils/pom.xml
+@@ -44,13 +44,11 @@
+         <dependency>
+             <groupId>org.springframework.security</groupId>
+             <artifactId>spring-security-crypto</artifactId>
+-            <version>4.2.3.RELEASE</version>
+         </dependency>
+         <!-- https://mvnrepository.com/artifact/org.springframework.security/spring-security-jwt -->
+         <dependency>
+             <groupId>org.springframework.security</groupId>
+             <artifactId>spring-security-jwt</artifactId>
+-            <version>1.0.8.RELEASE</version>
+         </dependency>
+         <!-- https://mvnrepository.com/artifact/org.springframework/spring-mock -->
+         <dependency>
+@@ -87,7 +85,6 @@
+         <dependency>
+             <groupId>com.google.guava</groupId>
+             <artifactId>guava</artifactId>
+-            <version>24.0-jre</version>
+         </dependency>
+         <dependency>
+             <groupId>com.google.code.gson</groupId>
+@@ -113,7 +110,6 @@
+             <plugin>
+                 <groupId>org.springframework.boot</groupId>
+                 <artifactId>spring-boot-maven-plugin</artifactId>
+-                <version>2.1.1.RELEASE</version>
+             </plugin>
+         </plugins>
+     </build>
+diff --git a/cf-framework-parent/cf-sms/cf-sms-service/pom.xml b/cf-framework-parent/cf-sms/cf-sms-service/pom.xml
+index fad992d..a997b64 100644
+--- a/cf-framework-parent/cf-sms/cf-sms-service/pom.xml
++++ b/cf-framework-parent/cf-sms/cf-sms-service/pom.xml
+@@ -42,7 +42,6 @@
+         <dependency>
+             <groupId>org.apache.dubbo</groupId>
+             <artifactId>dubbo-spring-boot-starter</artifactId>
+-            <version>2.7.3</version>
+         </dependency>
+ 
+         <dependency>
+@@ -92,7 +91,6 @@
+             <plugin>
+                 <groupId>org.springframework.boot</groupId>
+                 <artifactId>spring-boot-maven-plugin</artifactId>
+-                <version>2.1.1.RELEASE</version>
+                 <executions>
+                     <execution>
+                         <goals>
+diff --git a/cf-framework-parent/cf-ucenter/cf-ucenter-auth/pom.xml b/cf-framework-parent/cf-ucenter/cf-ucenter-auth/pom.xml
+index 7496b95..290bddb 100644
+--- a/cf-framework-parent/cf-ucenter/cf-ucenter-auth/pom.xml
++++ b/cf-framework-parent/cf-ucenter/cf-ucenter-auth/pom.xml
+@@ -80,12 +80,10 @@
+         <dependency>
+             <groupId>com.netflix.feign</groupId>
+             <artifactId>feign-okhttp</artifactId>
+-            <version>8.18.0</version>
+         </dependency>
+         <dependency>
+             <groupId>com.alibaba</groupId>
+             <artifactId>druid-spring-boot-starter</artifactId>
+-            <version>1.1.10</version>
+         </dependency>
+         <dependency>
+             <groupId>mysql</groupId>
+@@ -112,7 +110,6 @@
+             <plugin>
+                 <groupId>org.springframework.boot</groupId>
+                 <artifactId>spring-boot-maven-plugin</artifactId>
+-                <version>2.1.1.RELEASE</version>
+                 <executions>
+                     <execution>
+                         <goals>
+diff --git a/cf-framework-parent/cf-ucenter/cf-ucenter-service/pom.xml b/cf-framework-parent/cf-ucenter/cf-ucenter-service/pom.xml
+index 6e03dce..bc0d640 100644
+--- a/cf-framework-parent/cf-ucenter/cf-ucenter-service/pom.xml
++++ b/cf-framework-parent/cf-ucenter/cf-ucenter-service/pom.xml
+@@ -60,7 +60,6 @@
+         <dependency>
+             <groupId>org.apache.dubbo</groupId>
+             <artifactId>dubbo-spring-boot-starter</artifactId>
+-            <version>2.7.3</version>
+         </dependency>
+ 
+         <dependency>
+@@ -90,7 +89,6 @@
+             <plugin>
+                 <groupId>org.springframework.boot</groupId>
+                 <artifactId>spring-boot-maven-plugin</artifactId>
+-                <version>2.1.1.RELEASE</version>
+                 <executions>
+                     <execution>
+                         <goals>
+diff --git a/cf-framework-parent/pom.xml b/cf-framework-parent/pom.xml
+index 1844ede..fb86cb7 100644
+--- a/cf-framework-parent/pom.xml
++++ b/cf-framework-parent/pom.xml
+@@ -285,11 +285,25 @@
+                 <artifactId>guava</artifactId>
+                 <version>${guava.version}</version>
+             </dependency>
++            <dependency>
++                <groupId>com.alibaba</groupId>
++                <artifactId>druid-spring-boot-starter</artifactId>
++                <version>${druid.version}</version>
++            </dependency>
+ 
+         </dependencies>
+     </dependencyManagement>
+     <build>
+         <finalName>${project.artifactId}</finalName>
++        <pluginManagement>
++            <plugins>
++                <plugin>
++                    <groupId>org.springframework.boot</groupId>
++                    <artifactId>spring-boot-maven-plugin</artifactId>
++                    <version>${spring-boot.version}</version>
++                </plugin>
++            </plugins>
++        </pluginManagement>
+         <plugins>
+             <!-- &lt;!&ndash; 资源文件拷贝插件 &ndash;&gt;
+              <plugin>
+@@ -309,11 +323,6 @@
+                     <encoding>UTF-8</encoding>
+                 </configuration>
+             </plugin>
+-            <plugin>
+-                <groupId>org.springframework.boot</groupId>
+-                <artifactId>spring-boot-maven-plugin</artifactId>
+-                <version>2.1.1.RELEASE</version>
+-            </plugin>
+         </plugins>
+     </build>
+ 
