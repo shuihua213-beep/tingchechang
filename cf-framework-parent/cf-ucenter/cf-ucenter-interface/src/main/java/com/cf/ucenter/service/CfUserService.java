@@ -94,6 +94,8 @@ public interface CfUserService {
      */
     public List<CfUser> selectListByCondition(Map<String, Map<String, Object>> conditions, Map<String, String> allowFiledsMap, List<String> allowFileds);
 
+    public List<CfUser> selectPageListByCondition(Map<String, Map<String, Object>> conditions, Map<String, String> allowFiledsMap, List<String> allowFileds, Integer page, Integer size);
+
     /**
      * 根据条件查询用户数据列表数
      * @param conditions example {"字段名":"表别名"}

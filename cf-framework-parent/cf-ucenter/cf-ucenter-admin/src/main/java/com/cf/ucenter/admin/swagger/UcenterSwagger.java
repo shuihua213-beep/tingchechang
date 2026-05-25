@@ -1,7 +1,6 @@
 package com.cf.ucenter.admin.swagger;
 
 import com.cf.framework.domain.response.ResponseResult;
-import com.cf.ucenter.domain.CfUser;
 import com.cf.ucenter.request.CfCountUserQuery;
 import com.cf.ucenter.request.CfUserForm;
 import io.swagger.annotations.Api;
@@ -10,6 +9,7 @@ import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.*;
 
 /**
@@ -71,6 +71,15 @@ public interface UcenterSwagger {
                     required=true,paramType="query",dataType="string")
     })
     public ResponseResult selectListByCondition(String conditions);
+
+    @ApiOperation(value = "导出用户列表")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name="authorization",value = "jwt串(请加\"Bearer \"前缀，注意有空格)",required=true,paramType="header",dataType="string"),
+            @ApiImplicitParam(name="conditions",
+                    value = "筛选条件，与根据条件查询用户数据列表接口保持一致",
+                    required=true,paramType="query",dataType="string")
+    })
+    public void exportUserExcel(HttpServletResponse response, String conditions) throws Exception;
 
     @ApiOperation(value = "更新用户信息")
     @ApiImplicitParams({

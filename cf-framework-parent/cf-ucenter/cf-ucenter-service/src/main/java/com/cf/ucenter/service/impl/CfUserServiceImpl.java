@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -185,8 +186,7 @@ public class CfUserServiceImpl implements CfUserService {
 
     @Override
     public List<CfUser> selectListByCondition(Map<String, Map<String, Object>> conditions, Map<String, String> allowFiledsMap, List<String> allowFileds) {
-        String sql = "SELECT u.id,u.user_name,u.avatar,u.type,u.nick_name,u.true_name,u.phone,u.email,u.birthday,u.sex,u.sign,u.create_time FROM cf_user u";
-        sql = DbUtils.makeQuery(conditions, allowFiledsMap, allowFileds, sql, false);
+        String sql = buildSelectListSql(conditions, allowFiledsMap, allowFileds);
         List<CfUser> cfUsers = cfUserMapper.selectListByCondition(sql);
         if(cfUsers!=null){
             for (CfUser cfUser: cfUsers){
@@ -194,6 +194,11 @@ public class CfUserServiceImpl implements CfUserService {
             }
         }
         return cfUsers;
+    }
+
+    @Override
+    public List<CfUser> selectPageListByCondition(Map<String, Map<String, Object>> conditions, Map<String, String> allowFiledsMap, List<String> allowFileds, Integer page, Integer size) {
+        return cfUserMapper.selectListByCondition(buildSelectListSql(buildPagedConditions(conditions, page, size), allowFiledsMap, allowFileds));
     }
 
     @Override
@@ -256,7 +261,6 @@ public class CfUserServiceImpl implements CfUserService {
         if(insert==0){
             ExceptionCast.cast(CommonCode.FAIL);
         }
-        //创建用户资金账户
         CfAccount cfAccount = new CfAccount();
         cfAccount.setUid(cfUser.getId());
         cfAccount.setScoreType("cny");
@@ -312,7 +316,6 @@ public class CfUserServiceImpl implements CfUserService {
     @Override
     public CfUser bindPhone(String uid, String phone, String smsCode) {
         smsService.checkCode(phone,smsCode,CfSms.SMS_TYPE_IDENTITY);
-        //判断该手机号是否已经被绑定
         CfUser userByPhone = findByPhone(phone);
         if(userByPhone!=null){
             ExceptionCast.cast(UcenterCode.UCENTER_PHONE_REGISTERED);
@@ -378,13 +381,12 @@ public class CfUserServiceImpl implements CfUserService {
                     cfUser.setAvatar(wxUser.getHeadimgurl());
                 }
                 if(StringUtils.isEmpty(cfThirdPartyLogins.get(0).getOpenid())){
-                    //更新微信用户信息，考虑第三方平台与本平台数据互动只是unionid导致用户不完全的问题
                     CfThirdPartyLogin cfThirdPartyLogin = cfThirdPartyLogins.get(0);
                     cfThirdPartyLogin.setOpenid(wxUser.getOpenid());
                     cfThirdPartyLoginService.update(cfThirdPartyLogin);
                 }
                 cfUser.setPassword(null);
-                update(user);    //只做局部更新
+                update(user);
                 return cfUser;
             }else{
                 cfThirdPartyLoginService.delete(cfThirdPartyLogins.get(0).getId());
@@ -407,7 +409,6 @@ public class CfUserServiceImpl implements CfUserService {
         List<CfThirdPartyLogin> cfThirdPartyLogins = cfThirdPartyLoginService.getListByQuery(cfThirdPartyLoginQuery);
         CfUser user = null;
         if(cfThirdPartyLogins==null || cfThirdPartyLogins.size()==0){
-            //判断同样的unionid是否存在
             cfThirdPartyLoginQuery.setPlatform(null);
             cfThirdPartyLogins = cfThirdPartyLoginService.getListByQuery(cfThirdPartyLoginQuery);
             if(cfThirdPartyLogins!=null && cfThirdPartyLogins.size()>0){
@@ -511,10 +512,8 @@ public class CfUserServiceImpl implements CfUserService {
     @Override
     public Map<String, Object> checkUserDocumentsStatus(String uid) throws Exception {
         Map<String, Object> userDocuments = new HashMap<>();
-        //判断用户驾驶证是否有上传并且审核通过
         CfUserDriverLicense cfUserDriverLicense = checkUserDriverDocumentsStatus(uid);
         userDocuments.put("UserDriverLicense",cfUserDriverLicense);
-        //判断用户身份证是否有上传并且审核通过
         CfUserIdCard cfUserIdCard = checkUserIdCardDocumentsStatus(uid);
         userDocuments.put("UserIdCard",cfUserIdCard);
         return userDocuments;
@@ -540,5 +539,42 @@ public class CfUserServiceImpl implements CfUserService {
             ExceptionCast.cast(UcenterCode.USER_ID_IS_ABNORMAL,"驾驶证出现了问题，请自己确认或者联系管理员确认");
         }
         return cfUserDriverLicenses.get(0);
+    }
+
+    private String buildSelectListSql(Map<String, Map<String, Object>> conditions, Map<String, String> allowFiledsMap, List<String> allowFileds) {
+        String sql = "SELECT u.id,u.user_name,u.avatar,u.type,u.nick_name,u.true_name,u.phone,u.email,u.birthday,u.sex,u.sign,u.create_time FROM cf_user u";
+        return DbUtils.makeQuery(conditions, allowFiledsMap, allowFileds, sql, false);
+    }
+
+    private Map<String, Map<String, Object>> buildPagedConditions(Map<String, Map<String, Object>> conditions, Integer page, Integer size) {
+        Map<String, Map<String, Object>> queryConditions = new HashMap<>();
+        if(conditions!=null){
+            queryConditions.putAll(conditions);
+        }
+        if(!queryConditions.containsKey("order")){
+            queryConditions.put("order", makeDefaultOrderCondition());
+        }
+        HashMap<String, Object> limitCondition = new HashMap<>();
+        limitCondition.put("operator", "limit");
+        limitCondition.put("page", page);
+        limitCondition.put("limit", size);
+        queryConditions.put("limit", limitCondition);
+        return queryConditions;
+    }
+
+    private Map<String, Object> makeDefaultOrderCondition() {
+        HashMap<String, Object> orderCondition = new HashMap<>();
+        orderCondition.put("operator", "order");
+        LinkedHashMap<String, Object> orderList = new LinkedHashMap<>();
+        HashMap<String, String> createTimeOrder = new HashMap<>();
+        createTimeOrder.put("alias", "u");
+        createTimeOrder.put("type", "DESC");
+        orderList.put("create_time", createTimeOrder);
+        HashMap<String, String> idOrder = new HashMap<>();
+        idOrder.put("alias", "u");
+        idOrder.put("type", "DESC");
+        orderList.put("id", idOrder);
+        orderCondition.put("list", orderList);
+        return orderCondition;
     }
 }

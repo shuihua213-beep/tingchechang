@@ -1,0 +1,435 @@
+diff --git a/cf-framework-parent/cf-ucenter/cf-ucenter-admin/pom.xml b/cf-framework-parent/cf-ucenter/cf-ucenter-admin/pom.xml
+index 43436be..3aabda3 100644
+--- a/cf-framework-parent/cf-ucenter/cf-ucenter-admin/pom.xml
++++ b/cf-framework-parent/cf-ucenter/cf-ucenter-admin/pom.xml
+@@ -67,6 +67,11 @@
+ <!--                </exclusion>-->
+ <!--            </exclusions>-->
+ <!--        </dependency>-->
++        <dependency>
++            <groupId>com.alibaba</groupId>
++            <artifactId>easyexcel</artifactId>
++            <version>3.3.4</version>
++        </dependency>
+         <dependency>
+             <groupId>io.springfox</groupId>
+             <artifactId>springfox-swagger-ui</artifactId>
+@@ -128,4 +133,4 @@
+         </plugins>
+     </build>
+ 
+-</project>
+\ No newline at end of file
++</project>
+diff --git a/cf-framework-parent/cf-ucenter/cf-ucenter-admin/src/main/java/com/cf/ucenter/admin/controller/UcenterController.java b/cf-framework-parent/cf-ucenter/cf-ucenter-admin/src/main/java/com/cf/ucenter/admin/controller/UcenterController.java
+index 7c5e250..7761d21 100644
+--- a/cf-framework-parent/cf-ucenter/cf-ucenter-admin/src/main/java/com/cf/ucenter/admin/controller/UcenterController.java
++++ b/cf-framework-parent/cf-ucenter/cf-ucenter-admin/src/main/java/com/cf/ucenter/admin/controller/UcenterController.java
+@@ -1,10 +1,14 @@
+ package com.cf.ucenter.admin.controller;
+ 
++import com.alibaba.excel.EasyExcel;
++import com.alibaba.excel.ExcelWriter;
++import com.alibaba.excel.write.metadata.WriteSheet;
+ import com.alibaba.fastjson.JSONObject;
+ import com.cf.framework.domain.report.CountByDay;
+ import com.cf.framework.domain.response.CommonCode;
+ import com.cf.framework.domain.response.ResponseResult;
+ import com.cf.framework.domain.ucenter.ext.UserBasicInfo;
++import com.cf.framework.utils.DateUtil;
+ import com.cf.framework.utils.HttpHearderUtils;
+ import com.cf.ucenter.admin.config.AuthenticationInterceptor;
+ import com.cf.ucenter.admin.swagger.UcenterSwagger;
+@@ -13,6 +17,7 @@ import com.cf.ucenter.request.CfCountUserQuery;
+ import com.cf.ucenter.request.CfUserForm;
+ import com.cf.ucenter.request.CfUserQuery;
+ import com.cf.ucenter.service.CfUserService;
++import org.apache.commons.lang3.StringUtils;
+ import org.apache.dubbo.config.annotation.Reference;
+ import org.springframework.beans.BeanUtils;
+ import org.springframework.beans.factory.annotation.Autowired;
+@@ -21,9 +26,11 @@ import org.springframework.validation.annotation.Validated;
+ import org.springframework.web.bind.annotation.*;
+ 
+ import javax.servlet.http.HttpServletRequest;
++import javax.servlet.http.HttpServletResponse;
+ import javax.validation.constraints.NotEmpty;
+ import javax.validation.constraints.Pattern;
+ import javax.validation.constraints.Size;
++import java.net.URLEncoder;
+ import java.util.ArrayList;
+ import java.util.HashMap;
+ import java.util.List;
+@@ -41,6 +48,8 @@ import java.util.Map;
+ @RequestMapping("ucenterAdmin/")
+ @Validated
+ public class UcenterController implements UcenterSwagger {
++    private static final int EXPORT_PAGE_SIZE = 2000;
++
+     @Reference(version = "1.0.0", retries = 0, timeout = 30000, check = false)
+     private CfUserService cfUserService;
+     @Autowired
+@@ -99,39 +108,50 @@ public class UcenterController implements UcenterSwagger {
+     @Override
+     @RequestMapping(value = "selectListByCondition", method = RequestMethod.GET)
+     public ResponseResult selectListByCondition(String conditions) {
+-        Map conditionsMap = (JSONObject.parseObject(conditions));
+-        ArrayList<String> allowFileds = new ArrayList<>();
+-        allowFileds.add("id");
+-        allowFileds.add("user_name");
+-        allowFileds.add("type");
+-        allowFileds.add("nick_name");
+-        allowFileds.add("true_name");
+-        allowFileds.add("phone");
+-        allowFileds.add("sex");
+-        allowFileds.add("create_time");
+-        allowFileds.add("like");
+-        allowFileds.add("order");
+-        allowFileds.add("limit");
+-        Map<String, String> allowFiledsMap = new HashMap<String, String>();
+-        allowFiledsMap.put("id","u");
+-        allowFiledsMap.put("user_name","u");
+-        allowFiledsMap.put("type","u");
+-        allowFiledsMap.put("nick_name","u");
+-        allowFiledsMap.put("true_name","u");
+-        allowFiledsMap.put("phone","u");
+-        allowFiledsMap.put("sex","u");
+-        allowFiledsMap.put("create_time","u");
+-        allowFiledsMap.put("like","");
+-        allowFiledsMap.put("order","");
+-        allowFiledsMap.put("limit","");
+-        List<CfUser> cfCarParks = cfUserService.selectListByCondition(conditionsMap, allowFiledsMap,allowFileds);
++        Map<String, Object> allowData = makeAllowData(conditions);
++        ArrayList<String> allowFileds = (ArrayList<String>) allowData.get("allowFileds");
++        Map<String, String> allowFiledsMap = (Map<String, String>) allowData.get("allowFiledsMap");
++        Map<String, Map<String, Object>> conditionsMap = (Map<String, Map<String, Object>>) allowData.get("conditionsMap");
++        List<CfUser> cfUsers = cfUserService.selectListByCondition(conditionsMap, allowFiledsMap, allowFileds);
+         Integer counts = cfUserService.selectListByConditionCounts(conditionsMap, allowFiledsMap, allowFileds);
+-        if(cfCarParks!=null && cfCarParks.size()>0){
+-            return new ResponseResult(CommonCode.SUCCESS, cfCarParks, null, counts);
++        if(cfUsers!=null && cfUsers.size()>0){
++            return new ResponseResult(CommonCode.SUCCESS, cfUsers, null, counts);
+         }
+         return new ResponseResult(CommonCode.NO_MORE_DATAS);
+     }
+ 
++    @PreAuthorize("hasAuthority('ucenter-UcenterController-exportUserExcel')")
++    @Override
++    @RequestMapping(value = "exportUserExcel", method = RequestMethod.GET)
++    public void exportUserExcel(HttpServletResponse response, String conditions) throws Exception {
++        Map<String, Object> allowData = makeAllowData(conditions);
++        ArrayList<String> allowFileds = (ArrayList<String>) allowData.get("allowFileds");
++        Map<String, String> allowFiledsMap = (Map<String, String>) allowData.get("allowFiledsMap");
++        Map<String, Map<String, Object>> conditionsMap = (Map<String, Map<String, Object>>) allowData.get("conditionsMap");
++        setExcelResponseHeader(response, "用户列表");
++        ExcelWriter excelWriter = null;
++        try {
++            excelWriter = EasyExcel.write(response.getOutputStream()).head(makeUserExportHead()).autoCloseStream(false).build();
++            WriteSheet writeSheet = EasyExcel.writerSheet("sheet1").build();
++            int page = 1;
++            while (true) {
++                List<CfUser> cfUsers = cfUserService.selectPageListByCondition(conditionsMap, allowFiledsMap, allowFileds, page, EXPORT_PAGE_SIZE);
++                if(cfUsers==null || cfUsers.size()==0){
++                    break;
++                }
++                excelWriter.write(makeUserExportRows(cfUsers), writeSheet);
++                if(cfUsers.size()<EXPORT_PAGE_SIZE){
++                    break;
++                }
++                page++;
++            }
++        } finally {
++            if(excelWriter!=null){
++                excelWriter.finish();
++            }
++        }
++    }
++
+     @PreAuthorize("hasAuthority('ucenter-UcenterController-update')")
+     @Override
+     @RequestMapping(value = "update", method = RequestMethod.PUT)
+@@ -195,4 +215,109 @@ public class UcenterController implements UcenterSwagger {
+         }
+         return new ResponseResult(CommonCode.SUCCESS, list, cfUserService.getCountByQuery(new CfUserQuery()));
+     }
++
++    private Map<String, Object> makeAllowData(String conditions) {
++        Map<String, Object> map = new HashMap<>();
++        Map<String, Map<String, Object>> conditionsMap = StringUtils.isBlank(conditions) ? new HashMap<String, Map<String, Object>>() : JSONObject.parseObject(conditions, Map.class);
++        ArrayList<String> allowFileds = new ArrayList<>();
++        allowFileds.add("id");
++        allowFileds.add("user_name");
++        allowFileds.add("avatar");
++        allowFileds.add("type");
++        allowFileds.add("nick_name");
++        allowFileds.add("true_name");
++        allowFileds.add("phone");
++        allowFileds.add("email");
++        allowFileds.add("birthday");
++        allowFileds.add("sex");
++        allowFileds.add("sign");
++        allowFileds.add("create_time");
++        allowFileds.add("like");
++        allowFileds.add("order");
++        allowFileds.add("limit");
++        HashMap<String, String> allowFiledsMap = new HashMap<>();
++        allowFiledsMap.put("id","u");
++        allowFiledsMap.put("user_name","u");
++        allowFiledsMap.put("avatar","u");
++        allowFiledsMap.put("type","u");
++        allowFiledsMap.put("nick_name","u");
++        allowFiledsMap.put("true_name","u");
++        allowFiledsMap.put("phone","u");
++        allowFiledsMap.put("email","u");
++        allowFiledsMap.put("birthday","u");
++        allowFiledsMap.put("sex","u");
++        allowFiledsMap.put("sign","u");
++        allowFiledsMap.put("create_time","u");
++        allowFiledsMap.put("like","");
++        allowFiledsMap.put("order","");
++        allowFiledsMap.put("limit","");
++        map.put("conditionsMap", conditionsMap);
++        map.put("allowFileds", allowFileds);
++        map.put("allowFiledsMap", allowFiledsMap);
++        return map;
++    }
++
++    private List<List<String>> makeUserExportHead() {
++        ArrayList<List<String>> head = new ArrayList<>();
++        head.add(makeHeadItem("用户ID"));
++        head.add(makeHeadItem("用户名"));
++        head.add(makeHeadItem("头像"));
++        head.add(makeHeadItem("用户类型"));
++        head.add(makeHeadItem("昵称"));
++        head.add(makeHeadItem("真实姓名"));
++        head.add(makeHeadItem("手机号"));
++        head.add(makeHeadItem("邮箱"));
++        head.add(makeHeadItem("生日"));
++        head.add(makeHeadItem("性别"));
++        head.add(makeHeadItem("签名"));
++        head.add(makeHeadItem("注册时间"));
++        return head;
++    }
++
++    private List<String> makeHeadItem(String value) {
++        ArrayList<String> headItem = new ArrayList<>();
++        headItem.add(value);
++        return headItem;
++    }
++
++    private List<List<Object>> makeUserExportRows(List<CfUser> cfUsers) {
++        ArrayList<List<Object>> rows = new ArrayList<>();
++        for (CfUser cfUser: cfUsers){
++            ArrayList<Object> row = new ArrayList<>();
++            row.add(toEmptyString(cfUser.getId()));
++            row.add(toEmptyString(cfUser.getUserName()));
++            row.add(toEmptyString(cfUser.getAvatar()));
++            row.add(toEmptyString(cfUser.getType()));
++            row.add(toEmptyString(cfUser.getNickName()));
++            row.add(toEmptyString(cfUser.getTrueName()));
++            row.add(toEmptyString(cfUser.getPhone()));
++            row.add(toEmptyString(cfUser.getEmail()));
++            row.add(formatTime(cfUser.getBirthday(), "yyyy-MM-dd"));
++            row.add(toEmptyString(cfUser.getSex()));
++            row.add(toEmptyString(cfUser.getSign()));
++            row.add(formatTime(cfUser.getCreateTime(), "yyyy-MM-dd HH:mm:ss"));
++            rows.add(row);
++        }
++        return rows;
++    }
++
++    private String formatTime(Long time, String pattern) {
++        if(time==null || time<=0){
++            return "";
++        }
++        return DateUtil.stampToDate(time, pattern);
++    }
++
++    private String toEmptyString(Object value) {
++        return value == null ? "" : String.valueOf(value);
++    }
++
++    private void setExcelResponseHeader(HttpServletResponse response, String fileName) throws Exception {
++        String encodeFileName = URLEncoder.encode(fileName, "UTF-8").replaceAll("\\+", "%20");
++        response.setCharacterEncoding("UTF-8");
++        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
++        response.setHeader("Content-Disposition", "attachment;filename*=utf-8''" + encodeFileName + ".xlsx");
++        response.addHeader("Pargam", "no-cache");
++        response.addHeader("Cache-Control", "no-cache");
++    }
+ }
+diff --git a/cf-framework-parent/cf-ucenter/cf-ucenter-admin/src/main/java/com/cf/ucenter/admin/swagger/UcenterSwagger.java b/cf-framework-parent/cf-ucenter/cf-ucenter-admin/src/main/java/com/cf/ucenter/admin/swagger/UcenterSwagger.java
+index 8bd9e66..278283b 100644
+--- a/cf-framework-parent/cf-ucenter/cf-ucenter-admin/src/main/java/com/cf/ucenter/admin/swagger/UcenterSwagger.java
++++ b/cf-framework-parent/cf-ucenter/cf-ucenter-admin/src/main/java/com/cf/ucenter/admin/swagger/UcenterSwagger.java
+@@ -1,7 +1,6 @@
+ package com.cf.ucenter.admin.swagger;
+ 
+ import com.cf.framework.domain.response.ResponseResult;
+-import com.cf.ucenter.domain.CfUser;
+ import com.cf.ucenter.request.CfCountUserQuery;
+ import com.cf.ucenter.request.CfUserForm;
+ import io.swagger.annotations.Api;
+@@ -10,6 +9,7 @@ import io.swagger.annotations.ApiImplicitParams;
+ import io.swagger.annotations.ApiOperation;
+ import org.springframework.web.bind.annotation.RequestBody;
+ 
++import javax.servlet.http.HttpServletResponse;
+ import javax.validation.constraints.*;
+ 
+ /**
+@@ -72,6 +72,15 @@ public interface UcenterSwagger {
+     })
+     public ResponseResult selectListByCondition(String conditions);
+ 
++    @ApiOperation(value = "导出用户列表")
++    @ApiImplicitParams({
++            @ApiImplicitParam(name="authorization",value = "jwt串(请加\"Bearer \"前缀，注意有空格)",required=true,paramType="header",dataType="string"),
++            @ApiImplicitParam(name="conditions",
++                    value = "筛选条件，与根据条件查询用户数据列表接口保持一致",
++                    required=true,paramType="query",dataType="string")
++    })
++    public void exportUserExcel(HttpServletResponse response, String conditions) throws Exception;
++
+     @ApiOperation(value = "更新用户信息")
+     @ApiImplicitParams({
+             @ApiImplicitParam(name="authorization",value = "jwt串(请加\"Bearer \"前缀，注意有空格)",required=true,paramType="header",dataType="string")
+diff --git a/cf-framework-parent/cf-ucenter/cf-ucenter-interface/src/main/java/com/cf/ucenter/service/CfUserService.java b/cf-framework-parent/cf-ucenter/cf-ucenter-interface/src/main/java/com/cf/ucenter/service/CfUserService.java
+index d64371e..7b9ec49 100644
+--- a/cf-framework-parent/cf-ucenter/cf-ucenter-interface/src/main/java/com/cf/ucenter/service/CfUserService.java
++++ b/cf-framework-parent/cf-ucenter/cf-ucenter-interface/src/main/java/com/cf/ucenter/service/CfUserService.java
+@@ -94,6 +94,8 @@ public interface CfUserService {
+      */
+     public List<CfUser> selectListByCondition(Map<String, Map<String, Object>> conditions, Map<String, String> allowFiledsMap, List<String> allowFileds);
+ 
++    public List<CfUser> selectPageListByCondition(Map<String, Map<String, Object>> conditions, Map<String, String> allowFiledsMap, List<String> allowFileds, Integer page, Integer size);
++
+     /**
+      * 根据条件查询用户数据列表数
+      * @param conditions example {"字段名":"表别名"}
+diff --git a/cf-framework-parent/cf-ucenter/cf-ucenter-service/src/main/java/com/cf/ucenter/service/impl/CfUserServiceImpl.java b/cf-framework-parent/cf-ucenter/cf-ucenter-service/src/main/java/com/cf/ucenter/service/impl/CfUserServiceImpl.java
+index c5d94e7..30d39fe 100644
+--- a/cf-framework-parent/cf-ucenter/cf-ucenter-service/src/main/java/com/cf/ucenter/service/impl/CfUserServiceImpl.java
++++ b/cf-framework-parent/cf-ucenter/cf-ucenter-service/src/main/java/com/cf/ucenter/service/impl/CfUserServiceImpl.java
+@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
+ import java.math.BigDecimal;
+ import java.util.ArrayList;
+ import java.util.HashMap;
++import java.util.LinkedHashMap;
+ import java.util.List;
+ import java.util.Map;
+ import java.util.regex.Pattern;
+@@ -185,8 +186,7 @@ public class CfUserServiceImpl implements CfUserService {
+ 
+     @Override
+     public List<CfUser> selectListByCondition(Map<String, Map<String, Object>> conditions, Map<String, String> allowFiledsMap, List<String> allowFileds) {
+-        String sql = "SELECT u.id,u.user_name,u.avatar,u.type,u.nick_name,u.true_name,u.phone,u.email,u.birthday,u.sex,u.sign,u.create_time FROM cf_user u";
+-        sql = DbUtils.makeQuery(conditions, allowFiledsMap, allowFileds, sql, false);
++        String sql = buildSelectListSql(conditions, allowFiledsMap, allowFileds);
+         List<CfUser> cfUsers = cfUserMapper.selectListByCondition(sql);
+         if(cfUsers!=null){
+             for (CfUser cfUser: cfUsers){
+@@ -196,6 +196,11 @@ public class CfUserServiceImpl implements CfUserService {
+         return cfUsers;
+     }
+ 
++    @Override
++    public List<CfUser> selectPageListByCondition(Map<String, Map<String, Object>> conditions, Map<String, String> allowFiledsMap, List<String> allowFileds, Integer page, Integer size) {
++        return cfUserMapper.selectListByCondition(buildSelectListSql(buildPagedConditions(conditions, page, size), allowFiledsMap, allowFileds));
++    }
++
+     @Override
+     public Integer selectListByConditionCounts(Map<String, Map<String, Object>> conditions, Map<String, String> allowFiledsMap, List<String> allowFileds) {
+         String sql = "SELECT count(*) FROM cf_user u";
+@@ -256,7 +261,6 @@ public class CfUserServiceImpl implements CfUserService {
+         if(insert==0){
+             ExceptionCast.cast(CommonCode.FAIL);
+         }
+-        //创建用户资金账户
+         CfAccount cfAccount = new CfAccount();
+         cfAccount.setUid(cfUser.getId());
+         cfAccount.setScoreType("cny");
+@@ -312,7 +316,6 @@ public class CfUserServiceImpl implements CfUserService {
+     @Override
+     public CfUser bindPhone(String uid, String phone, String smsCode) {
+         smsService.checkCode(phone,smsCode,CfSms.SMS_TYPE_IDENTITY);
+-        //判断该手机号是否已经被绑定
+         CfUser userByPhone = findByPhone(phone);
+         if(userByPhone!=null){
+             ExceptionCast.cast(UcenterCode.UCENTER_PHONE_REGISTERED);
+@@ -378,13 +381,12 @@ public class CfUserServiceImpl implements CfUserService {
+                     cfUser.setAvatar(wxUser.getHeadimgurl());
+                 }
+                 if(StringUtils.isEmpty(cfThirdPartyLogins.get(0).getOpenid())){
+-                    //更新微信用户信息，考虑第三方平台与本平台数据互动只是unionid导致用户不完全的问题
+                     CfThirdPartyLogin cfThirdPartyLogin = cfThirdPartyLogins.get(0);
+                     cfThirdPartyLogin.setOpenid(wxUser.getOpenid());
+                     cfThirdPartyLoginService.update(cfThirdPartyLogin);
+                 }
+                 cfUser.setPassword(null);
+-                update(user);    //只做局部更新
++                update(user);
+                 return cfUser;
+             }else{
+                 cfThirdPartyLoginService.delete(cfThirdPartyLogins.get(0).getId());
+@@ -407,7 +409,6 @@ public class CfUserServiceImpl implements CfUserService {
+         List<CfThirdPartyLogin> cfThirdPartyLogins = cfThirdPartyLoginService.getListByQuery(cfThirdPartyLoginQuery);
+         CfUser user = null;
+         if(cfThirdPartyLogins==null || cfThirdPartyLogins.size()==0){
+-            //判断同样的unionid是否存在
+             cfThirdPartyLoginQuery.setPlatform(null);
+             cfThirdPartyLogins = cfThirdPartyLoginService.getListByQuery(cfThirdPartyLoginQuery);
+             if(cfThirdPartyLogins!=null && cfThirdPartyLogins.size()>0){
+@@ -511,10 +512,8 @@ public class CfUserServiceImpl implements CfUserService {
+     @Override
+     public Map<String, Object> checkUserDocumentsStatus(String uid) throws Exception {
+         Map<String, Object> userDocuments = new HashMap<>();
+-        //判断用户驾驶证是否有上传并且审核通过
+         CfUserDriverLicense cfUserDriverLicense = checkUserDriverDocumentsStatus(uid);
+         userDocuments.put("UserDriverLicense",cfUserDriverLicense);
+-        //判断用户身份证是否有上传并且审核通过
+         CfUserIdCard cfUserIdCard = checkUserIdCardDocumentsStatus(uid);
+         userDocuments.put("UserIdCard",cfUserIdCard);
+         return userDocuments;
+@@ -541,4 +540,41 @@ public class CfUserServiceImpl implements CfUserService {
+         }
+         return cfUserDriverLicenses.get(0);
+     }
++
++    private String buildSelectListSql(Map<String, Map<String, Object>> conditions, Map<String, String> allowFiledsMap, List<String> allowFileds) {
++        String sql = "SELECT u.id,u.user_name,u.avatar,u.type,u.nick_name,u.true_name,u.phone,u.email,u.birthday,u.sex,u.sign,u.create_time FROM cf_user u";
++        return DbUtils.makeQuery(conditions, allowFiledsMap, allowFileds, sql, false);
++    }
++
++    private Map<String, Map<String, Object>> buildPagedConditions(Map<String, Map<String, Object>> conditions, Integer page, Integer size) {
++        Map<String, Map<String, Object>> queryConditions = new HashMap<>();
++        if(conditions!=null){
++            queryConditions.putAll(conditions);
++        }
++        if(!queryConditions.containsKey("order")){
++            queryConditions.put("order", makeDefaultOrderCondition());
++        }
++        HashMap<String, Object> limitCondition = new HashMap<>();
++        limitCondition.put("operator", "limit");
++        limitCondition.put("page", page);
++        limitCondition.put("limit", size);
++        queryConditions.put("limit", limitCondition);
++        return queryConditions;
++    }
++
++    private Map<String, Object> makeDefaultOrderCondition() {
++        HashMap<String, Object> orderCondition = new HashMap<>();
++        orderCondition.put("operator", "order");
++        LinkedHashMap<String, Object> orderList = new LinkedHashMap<>();
++        HashMap<String, String> createTimeOrder = new HashMap<>();
++        createTimeOrder.put("alias", "u");
++        createTimeOrder.put("type", "DESC");
++        orderList.put("create_time", createTimeOrder);
++        HashMap<String, String> idOrder = new HashMap<>();
++        idOrder.put("alias", "u");
++        idOrder.put("type", "DESC");
++        orderList.put("id", idOrder);
++        orderCondition.put("list", orderList);
++        return orderCondition;
++    }
+ }
