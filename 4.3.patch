@@ -1,0 +1,292 @@
+diff --git a/cf-framework-parent/cf-ad/cf-ad-api/pom.xml b/cf-framework-parent/cf-ad/cf-ad-api/pom.xml
+index be8c0b6..1b1eb4a 100644
+--- a/cf-framework-parent/cf-ad/cf-ad-api/pom.xml
++++ b/cf-framework-parent/cf-ad/cf-ad-api/pom.xml
+@@ -78,7 +78,6 @@
+         <dependency>
+             <groupId>org.json</groupId>
+             <artifactId>json</artifactId>
+-            <version>20160810</version>
+         </dependency>
+         <dependency>
+             <groupId>org.springframework.boot</groupId>
+@@ -87,22 +86,18 @@
+         <dependency>
+             <groupId>ch.qos.logback</groupId>
+             <artifactId>logback-core</artifactId>
+-            <version>1.2.3</version>
+         </dependency>
+         <dependency>
+             <groupId>ch.qos.logback</groupId>
+             <artifactId>logback-classic</artifactId>
+-            <version>1.2.3</version>
+         </dependency>
+         <dependency>
+             <groupId>ch.qos.logback</groupId>
+             <artifactId>logback-access</artifactId>
+-            <version>1.2.3</version>
+         </dependency>
+         <dependency>
+             <groupId>net.logstash.logback</groupId>
+             <artifactId>logstash-logback-encoder</artifactId>
+-            <version>5.1</version>
+         </dependency>
+         <dependency>
+             <groupId>org.springframework.boot</groupId>
+diff --git a/cf-framework-parent/cf-internet-of-things/cf-car-park/cf-car-park-api/pom.xml b/cf-framework-parent/cf-internet-of-things/cf-car-park/cf-car-park-api/pom.xml
+index 87060d8..47355e0 100644
+--- a/cf-framework-parent/cf-internet-of-things/cf-car-park/cf-car-park-api/pom.xml
++++ b/cf-framework-parent/cf-internet-of-things/cf-car-park/cf-car-park-api/pom.xml
+@@ -67,7 +67,6 @@
+         <dependency>
+             <groupId>org.json</groupId>
+             <artifactId>json</artifactId>
+-            <version>20160810</version>
+         </dependency>
+         <dependency>
+             <groupId>org.springframework.boot</groupId>
+@@ -76,22 +75,18 @@
+         <dependency>
+             <groupId>ch.qos.logback</groupId>
+             <artifactId>logback-core</artifactId>
+-            <version>1.2.3</version>
+         </dependency>
+         <dependency>
+             <groupId>ch.qos.logback</groupId>
+             <artifactId>logback-classic</artifactId>
+-            <version>1.2.3</version>
+         </dependency>
+         <dependency>
+             <groupId>ch.qos.logback</groupId>
+             <artifactId>logback-access</artifactId>
+-            <version>1.2.3</version>
+         </dependency>
+         <dependency>
+             <groupId>net.logstash.logback</groupId>
+             <artifactId>logstash-logback-encoder</artifactId>
+-            <version>5.1</version>
+         </dependency>
+     </dependencies>
+     <build>
+diff --git a/cf-framework-parent/cf-internet-of-things/cf-charging/cf-charging-api/pom.xml b/cf-framework-parent/cf-internet-of-things/cf-charging/cf-charging-api/pom.xml
+index 38bb5b0..b22097b 100644
+--- a/cf-framework-parent/cf-internet-of-things/cf-charging/cf-charging-api/pom.xml
++++ b/cf-framework-parent/cf-internet-of-things/cf-charging/cf-charging-api/pom.xml
+@@ -68,7 +68,6 @@
+         <dependency>
+             <groupId>org.json</groupId>
+             <artifactId>json</artifactId>
+-            <version>20160810</version>
+         </dependency>
+         <dependency>
+             <groupId>org.springframework.boot</groupId>
+@@ -77,22 +76,18 @@
+         <dependency>
+             <groupId>ch.qos.logback</groupId>
+             <artifactId>logback-core</artifactId>
+-            <version>1.2.3</version>
+         </dependency>
+         <dependency>
+             <groupId>ch.qos.logback</groupId>
+             <artifactId>logback-classic</artifactId>
+-            <version>1.2.3</version>
+         </dependency>
+         <dependency>
+             <groupId>ch.qos.logback</groupId>
+             <artifactId>logback-access</artifactId>
+-            <version>1.2.3</version>
+         </dependency>
+         <dependency>
+             <groupId>net.logstash.logback</groupId>
+             <artifactId>logstash-logback-encoder</artifactId>
+-            <version>5.1</version>
+         </dependency>
+     </dependencies>
+     <build>
+diff --git a/cf-framework-parent/cf-internet-of-things/cf-logistics/cf-logistics-api/pom.xml b/cf-framework-parent/cf-internet-of-things/cf-logistics/cf-logistics-api/pom.xml
+index 43d4478..0805f65 100644
+--- a/cf-framework-parent/cf-internet-of-things/cf-logistics/cf-logistics-api/pom.xml
++++ b/cf-framework-parent/cf-internet-of-things/cf-logistics/cf-logistics-api/pom.xml
+@@ -83,7 +83,6 @@
+         <dependency>
+             <groupId>org.json</groupId>
+             <artifactId>json</artifactId>
+-            <version>20160810</version>
+         </dependency>
+         <dependency>
+             <groupId>org.springframework.boot</groupId>
+@@ -92,22 +91,18 @@
+         <dependency>
+             <groupId>ch.qos.logback</groupId>
+             <artifactId>logback-core</artifactId>
+-            <version>1.2.3</version>
+         </dependency>
+         <dependency>
+             <groupId>ch.qos.logback</groupId>
+             <artifactId>logback-classic</artifactId>
+-            <version>1.2.3</version>
+         </dependency>
+         <dependency>
+             <groupId>ch.qos.logback</groupId>
+             <artifactId>logback-access</artifactId>
+-            <version>1.2.3</version>
+         </dependency>
+         <dependency>
+             <groupId>net.logstash.logback</groupId>
+             <artifactId>logstash-logback-encoder</artifactId>
+-            <version>5.1</version>
+         </dependency>
+     </dependencies>
+     <build>
+diff --git a/cf-framework-parent/pom.xml b/cf-framework-parent/pom.xml
+index 1844ede..c0be253 100644
+--- a/cf-framework-parent/pom.xml
++++ b/cf-framework-parent/pom.xml
+@@ -125,13 +125,6 @@
+     <!--test-->
+     <dependencyManagement>
+         <dependencies>
+-            <dependency>
+-                <groupId>org.springframework.cloud</groupId>
+-                <artifactId>spring-cloud-dependencies</artifactId>
+-                <version>Finchley.SR1</version>
+-                <type>pom</type>
+-                <scope>import</scope>
+-            </dependency>
+             <!-- Spring Boot -->
+             <dependency>
+                 <groupId>org.springframework.boot</groupId>
+@@ -140,6 +133,13 @@
+                 <type>pom</type>
+                 <scope>import</scope>
+             </dependency>
++            <dependency>
++                <groupId>org.springframework.cloud</groupId>
++                <artifactId>spring-cloud-dependencies</artifactId>
++                <version>Finchley.SR1</version>
++                <type>pom</type>
++                <scope>import</scope>
++            </dependency>
+ 
+ 
+             <!-- Apache Dubbo  -->
+@@ -285,6 +285,31 @@
+                 <artifactId>guava</artifactId>
+                 <version>${guava.version}</version>
+             </dependency>
++            <dependency>
++                <groupId>org.json</groupId>
++                <artifactId>json</artifactId>
++                <version>20160810</version>
++            </dependency>
++            <dependency>
++                <groupId>ch.qos.logback</groupId>
++                <artifactId>logback-core</artifactId>
++                <version>1.2.3</version>
++            </dependency>
++            <dependency>
++                <groupId>ch.qos.logback</groupId>
++                <artifactId>logback-classic</artifactId>
++                <version>1.2.3</version>
++            </dependency>
++            <dependency>
++                <groupId>ch.qos.logback</groupId>
++                <artifactId>logback-access</artifactId>
++                <version>1.2.3</version>
++            </dependency>
++            <dependency>
++                <groupId>net.logstash.logback</groupId>
++                <artifactId>logstash-logback-encoder</artifactId>
++                <version>5.1</version>
++            </dependency>
+ 
+         </dependencies>
+     </dependencyManagement>
+diff --git a/find_deps.py b/find_deps.py
+new file mode 100644
+index 0000000..443b988
+--- /dev/null
++++ b/find_deps.py
+@@ -0,0 +1,33 @@
++import os
++import xml.etree.ElementTree as ET
++
++def find_poms(root_dir):
++    poms = []
++    for dirpath, dirnames, filenames in os.walk(root_dir):
++        for filename in filenames:
++            if filename == 'pom.xml':
++                poms.append(os.path.join(dirpath, filename))
++    return poms
++
++poms = find_poms('/app/tingchechang')
++for pom in poms:
++    try:
++        tree = ET.parse(pom)
++        root = tree.getroot()
++        ns = {'mvn': 'http://maven.apache.org/POM/4.0.0'}
++        
++        # Look for dependencies with version
++        for dep in root.findall('.//mvn:dependency', ns):
++            group = dep.find('mvn:groupId', ns)
++            art = dep.find('mvn:artifactId', ns)
++            ver = dep.find('mvn:version', ns)
++            
++            if group is not None and art is not None and ver is not None:
++                g_text = group.text or ''
++                a_text = art.text or ''
++                v_text = ver.text or ''
++                
++                if 'spring' in g_text.lower() or 'spring' in a_text.lower() or 'jackson' in g_text.lower() or 'jackson' in a_text.lower() or 'boot' in g_text.lower() or 'boot' in a_text.lower():
++                    print(f"[{pom}] {g_text}:{a_text}:{v_text}")
++    except Exception as e:
++        print(f"Error parsing {pom}: {e}")
+diff --git a/find_jackson.py b/find_jackson.py
+new file mode 100644
+index 0000000..c968adf
+--- /dev/null
++++ b/find_jackson.py
+@@ -0,0 +1,18 @@
++import os
++import xml.etree.ElementTree as ET
++import sys
++
++def find_poms(root_dir):
++    poms = []
++    for dirpath, dirnames, filenames in os.walk(root_dir):
++        for filename in filenames:
++            if filename == 'pom.xml':
++                poms.append(os.path.join(dirpath, filename))
++    return poms
++
++poms = find_poms('/app/tingchechang')
++for pom in poms:
++    with open(pom, 'r', encoding='utf-8') as f:
++        content = f.read()
++        if 'jackson' in content.lower():
++            print(f"JACKSON in {pom}")
+diff --git a/find_versions.py b/find_versions.py
+new file mode 100644
+index 0000000..206d17c
+--- /dev/null
++++ b/find_versions.py
+@@ -0,0 +1,19 @@
++import os
++import xml.etree.ElementTree as ET
++
++def find_poms(root_dir):
++    poms = []
++    for dirpath, dirnames, filenames in os.walk(root_dir):
++        for filename in filenames:
++            if filename == 'pom.xml':
++                poms.append(os.path.join(dirpath, filename))
++    return poms
++
++poms = find_poms('/app/tingchechang')
++for pom in poms:
++    with open(pom, 'r', encoding='utf-8') as f:
++        content = f.read()
++        if 'jackson' in content.lower():
++            print(f"Found jackson in {pom}")
++        if 'spring-boot' in content.lower():
++            print(f"Found spring-boot in {pom}")
