@@ -1,0 +1,1271 @@
+diff --git a/.env.example b/.env.example
+new file mode 100644
+index 0000000..5c5cf01
+--- /dev/null
++++ b/.env.example
+@@ -0,0 +1,26 @@
++# 数据库配置
++DB_NAME=caifeng
++DB_URL=jdbc:mysql://mysql:3306/caifeng?characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false
++DB_USER=caifeng
++DB_PASSWORD=your_password
++DB_MAX_ACTIVE=32
++
++# Redis 配置
++REDIS_HOST=redis
++REDIS_PORT=6379
++REDIS_PASSWORD=
++REDIS_DB=0
++REDIS_MAX_ACTIVE=20
++REDIS_MAX_IDLE=20
++REDIS_MIN_IDLE=10
++REDIS_MAX_WAIT=-1
++
++# MongoDB 配置
++MONGODB_URI=mongodb://caifeng:caifEng666@mongodb:27017/?authSource=caifeng
++MONGODB_DB=caifeng
++
++# Dubbo/Zookeeper 配置
++DUBBO_REGISTRY=zookeeper://zookeeper:2181
++
++# FastDFS 配置
++FASTDFS_TRACKER=fastdfs:22122
+diff --git a/cf-framework-parent/cf-ad/cf-ad-admin/src/main/resources/application.yml b/cf-framework-parent/cf-ad/cf-ad-admin/src/main/resources/application.yml
+index 96ab6f7..282a570 100644
+--- a/cf-framework-parent/cf-ad/cf-ad-admin/src/main/resources/application.yml
++++ b/cf-framework-parent/cf-ad/cf-ad-admin/src/main/resources/application.yml
+@@ -5,21 +5,5 @@ spring:
+   application:
+     name: cf-ad-admin
+   profiles:
+-    active: dev
+-  redis:
+-    host: redis数据库地址
+-    port: 6379
+-    password: redis密码
+-    database: 0
+-    jedis:
+-      pool:
+-        maxActive: 3
+-        maxIdle: 3
+-        minIdle: 1
+-        maxWait: -1
+-dubbo:
+-  application:
+-    name: ${spring.application.name}
+-  registry:
+-    address: zookeeper://127.0.0.1:2181
++    active: dev,common
+ 
+diff --git a/cf-framework-parent/cf-ad/cf-ad-api/src/main/resources/application.yml b/cf-framework-parent/cf-ad/cf-ad-api/src/main/resources/application.yml
+index 6a3886d..1606d34 100644
+--- a/cf-framework-parent/cf-ad/cf-ad-api/src/main/resources/application.yml
++++ b/cf-framework-parent/cf-ad/cf-ad-api/src/main/resources/application.yml
+@@ -5,21 +5,5 @@ spring:
+   application:
+     name: cf-ad-api
+   profiles:
+-    active: dev
+-  redis:
+-    host: redis数据库地址
+-    port: 6379
+-    password: redis密码
+-    database: 0
+-    jedis:
+-      pool:
+-        maxActive: 3
+-        maxIdle: 3
+-        minIdle: 1
+-        maxWait: -1
+-dubbo:
+-  application:
+-    name: ${spring.application.name}
+-  registry:
+-    address: zookeeper://127.0.0.1:2181
++    active: dev,common
+ 
+diff --git a/cf-framework-parent/cf-ad/cf-ad-service/src/main/resources/application.yml b/cf-framework-parent/cf-ad/cf-ad-service/src/main/resources/application.yml
+index 1fc4c36..bcb1180 100644
+--- a/cf-framework-parent/cf-ad/cf-ad-service/src/main/resources/application.yml
++++ b/cf-framework-parent/cf-ad/cf-ad-service/src/main/resources/application.yml
+@@ -5,46 +5,17 @@ spring:
+   application:
+     name: cf-ad-service
+   profiles:
+-    active: dev
+-  datasource:
+-    name: caifeng
+-    type: com.alibaba.druid.pool.DruidDataSource
+-    url: jdbc:mysql://mysql数据库地址:3306/caifeng?characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false
+-    username: caifeng
+-    password: mysql数据库密码
+-    driver-class-name: com.mysql.jdbc.Driver
+-    maxActive: 32
+-  redis:
+-    host: redis数据库地址
+-    port: 6379
+-    password: redis密码
+-    database: 0
+-    jedis:
+-      pool:
+-        maxActive: 3
+-        maxIdle: 3
+-        minIdle: 1
+-        maxWait: -1
++    active: dev,common
+ 
+ #公共配置与profiles选择无关
+ mybatis:
+-  #  mapperScanPackage: com.cf.mapper
+-  #  typeAliasesPackage: com.cf.pojo
+   mapperLocations: classpath:com.cf.ad.dao.mapper/*.xml
+   configLocation: classpath:config/SqlMapConfig.xml
+ dubbo:
+   scan:
+     base-packages: com.cf.ad.service.impl
+-  application:
+-    name: ${spring.application.name}
+   protocol:
+-    name: dubbo
+     port: 20898
+-    threads: 200
+-    accepts: 0
+-  registry:
+-    address: zookeeper://127.0.0.1:2181
+-  provider.filter: -exception
+ 
+   # 数据源 ds0,ds1
+ #  shardingsphere:
+diff --git a/cf-framework-parent/cf-chat/cf-chat-api/src/main/resources/application.yml b/cf-framework-parent/cf-chat/cf-chat-api/src/main/resources/application.yml
+index 79eb527..c6672c7 100644
+--- a/cf-framework-parent/cf-chat/cf-chat-api/src/main/resources/application.yml
++++ b/cf-framework-parent/cf-chat/cf-chat-api/src/main/resources/application.yml
+@@ -5,23 +5,7 @@ spring:
+   application:
+     name: cf-chat-api
+   profiles:
+-    active: dev
+-  redis:
+-    host: redis数据库地址
+-    port: 6379
+-    password: redis密码
+-    database: 0
+-    jedis:
+-      pool:
+-        maxActive: 3
+-        maxIdle: 3
+-        minIdle: 1
+-        maxWait: -1
+-dubbo:
+-  application:
+-    name: ${spring.application.name}
+-  registry:
+-    address: zookeeper://127.0.0.1:2181
++    active: dev,common
+ auth:
+   tokenValiditySeconds: 1200
+   clientId: oauth2用户名，记得在对应的数据库配置用户名
+diff --git a/cf-framework-parent/cf-chat/cf-chat-service/src/main/resources/application.yml b/cf-framework-parent/cf-chat/cf-chat-service/src/main/resources/application.yml
+index 2cc89d4..5c00325 100644
+--- a/cf-framework-parent/cf-chat/cf-chat-service/src/main/resources/application.yml
++++ b/cf-framework-parent/cf-chat/cf-chat-service/src/main/resources/application.yml
+@@ -5,50 +5,17 @@ spring:
+   application:
+     name: cf-chat-service
+   profiles:
+-    active: dev
+-  datasource:
+-    name: caifeng
+-    type: com.alibaba.druid.pool.DruidDataSource
+-    url: jdbc:mysql://mysql数据库地址:3306/caifeng?characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false
+-    username: caifeng
+-    password: mysql数据库密码
+-    driver-class-name: com.mysql.jdbc.Driver
+-    maxActive: 32
+-  data:
+-    mongodb:
+-      uri: mongodb://caifeng:caifEng666@mysql数据库地址:27017/?authSource=caifeng
+-      database: caifeng
+-  redis:
+-    host: redis数据库地址
+-    port: 6379
+-    password: redis密码
+-    database: 0
+-    jedis:
+-      pool:
+-        maxActive: 3
+-        maxIdle: 3
+-        minIdle: 1
+-        maxWait: -1
++    active: dev,common
+ 
+ #公共配置与profiles选择无关
+ mybatis:
+-  #  mapperScanPackage: com.cf.mapper
+-  #  typeAliasesPackage: com.cf.pojo
+   mapperLocations: classpath:com.cf.chat.dao.mapper/*.xml
+   configLocation: classpath:config/SqlMapConfig.xml
+ dubbo:
+   scan:
+     base-packages: com.cf.chat.service.impl
+-  application:
+-    name: ${spring.application.name}
+   protocol:
+-    name: dubbo
+     port: 20883
+-    threads: 200
+-    accepts: 0
+-  registry:
+-    address: zookeeper://127.0.0.1:2181
+-  provider.filter: -exception
+ 
+   # 数据源 ds0,ds1
+ #  shardingsphere:
+diff --git a/cf-framework-parent/cf-file/cf-file-api/src/main/resources/application.yml b/cf-framework-parent/cf-file/cf-file-api/src/main/resources/application.yml
+index 7451cc7..c8b5eb4 100644
+--- a/cf-framework-parent/cf-file/cf-file-api/src/main/resources/application.yml
++++ b/cf-framework-parent/cf-file/cf-file-api/src/main/resources/application.yml
+@@ -5,21 +5,5 @@ spring:
+   application:
+     name: cf-file-api
+   profiles:
+-    active: dev
+-  redis:
+-    host: redis数据库地址
+-    port: 6379
+-    password: redis密码
+-    database: 0
+-    jedis:
+-      pool:
+-        maxActive: 3
+-        maxIdle: 3
+-        minIdle: 1
+-        maxWait: -1
+-dubbo:
+-  application:
+-    name: ${spring.application.name}
+-  registry:
+-    address: zookeeper://127.0.0.1:2181
++    active: dev,common
+ 
+diff --git a/cf-framework-parent/cf-file/cf-file-service/src/main/resources/application.yml b/cf-framework-parent/cf-file/cf-file-service/src/main/resources/application.yml
+index 8eee9c9..8601473 100644
+--- a/cf-framework-parent/cf-file/cf-file-service/src/main/resources/application.yml
++++ b/cf-framework-parent/cf-file/cf-file-service/src/main/resources/application.yml
+@@ -5,69 +5,25 @@ spring:
+   application:
+     name: cf-file-service
+   profiles:
+-    active: dev
+-  datasource:
+-    name: caifeng
+-    type: com.alibaba.druid.pool.DruidDataSource
+-    url: jdbc:mysql://mysql数据库地址:3306/caifeng?characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false
+-    username: caifeng
+-    password: mysql数据库密码
+-    driver-class-name: com.mysql.jdbc.Driver
+-    maxActive: 32
+-  data:
+-    mongodb:
+-      uri: mongodb://caifeng:caifEng666@mysql数据库地址:27017/?authSource=caifeng
+-      database: caifeng
++    active: dev,common
+   #SpringMVC上传文件配置
+   servlet:
+     multipart:
+-      #默认支持文件上传.
+       enabled: true
+-      #支持文件写入磁盘.
+       file-size-threshold: 0
+-      # 上传文件的临时目录
+       location:
+-      # 最大支持文件大小
+       max-file-size: 1MB
+-      # 最大支持请求大小
+       max-request-size: 30MB
+-  redis:
+-    host: redis数据库地址
+-    port: 6379
+-    password: redis密码
+-    database: 0
+-    jedis:
+-      pool:
+-        maxActive: 3
+-        maxIdle: 3
+-        minIdle: 1
+-        maxWait: -1
+ 
+ #公共配置与profiles选择无关
+ mybatis:
+-  #  mapperScanPackage: com.cf.mapper
+-  #  typeAliasesPackage: com.cf.pojo
+   mapperLocations: classpath:com.cf.chat.dao.mapper/*.xml
+   configLocation: classpath:config/SqlMapConfig.xml
+ dubbo:
+   scan:
+     base-packages: com.cf.file.service.impl
+-  application:
+-    name: ${spring.application.name}
+   protocol:
+-    name: dubbo
+     port: 20887
+-    threads: 200
+-    accepts: 0
+-  registry:
+-    address: zookeeper://127.0.0.1:2181
+-  provider.filter: -exception
+-cf:
+-  fastdfs:
+-    connect_timeout_in_seconds: 5
+-    network_timeout_in_seconds: 30
+-    charset: UTF-8
+-    tracker_servers: mysql数据库地址:22122 #多个 trackerServer中间以逗号分隔
+ 
+   # 数据源 ds0,ds1
+ #  shardingsphere:
+diff --git a/cf-framework-parent/cf-framework-common/src/main/resources/application-common.yml b/cf-framework-parent/cf-framework-common/src/main/resources/application-common.yml
+new file mode 100644
+index 0000000..c3363d1
+--- /dev/null
++++ b/cf-framework-parent/cf-framework-common/src/main/resources/application-common.yml
+@@ -0,0 +1,42 @@
++spring:
++  datasource:
++    name: ${DB_NAME:caifeng}
++    type: com.alibaba.druid.pool.DruidDataSource
++    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/caifeng?characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false}
++    username: ${DB_USER:caifeng}
++    password: ${DB_PASSWORD:caifeng}
++    driver-class-name: com.mysql.jdbc.Driver
++    maxActive: ${DB_MAX_ACTIVE:32}
++  redis:
++    host: ${REDIS_HOST:127.0.0.1}
++    port: ${REDIS_PORT:6379}
++    password: ${REDIS_PASSWORD:}
++    database: ${REDIS_DB:0}
++    jedis:
++      pool:
++        maxActive: ${REDIS_MAX_ACTIVE:20}
++        maxIdle: ${REDIS_MAX_IDLE:20}
++        minIdle: ${REDIS_MIN_IDLE:10}
++        maxWait: ${REDIS_MAX_WAIT:-1}
++  data:
++    mongodb:
++      uri: ${MONGODB_URI:mongodb://caifeng:caifEng666@127.0.0.1:27017/?authSource=caifeng}
++      database: ${MONGODB_DB:caifeng}
++
++dubbo:
++  application:
++    name: ${spring.application.name}
++  protocol:
++    name: dubbo
++    threads: 200
++    accepts: 0
++  registry:
++    address: ${DUBBO_REGISTRY:zookeeper://127.0.0.1:2181}
++  provider.filter: -exception
++
++cf:
++  fastdfs:
++    connect_timeout_in_seconds: 5
++    network_timeout_in_seconds: 30
++    charset: UTF-8
++    tracker_servers: ${FASTDFS_TRACKER:127.0.0.1:22122}
+diff --git a/cf-framework-parent/cf-internet-of-things/cf-car-park/cf-car-park-admin/src/main/resources/application.yml b/cf-framework-parent/cf-internet-of-things/cf-car-park/cf-car-park-admin/src/main/resources/application.yml
+index 4869a06..9d9c756 100644
+--- a/cf-framework-parent/cf-internet-of-things/cf-car-park/cf-car-park-admin/src/main/resources/application.yml
++++ b/cf-framework-parent/cf-internet-of-things/cf-car-park/cf-car-park-admin/src/main/resources/application.yml
+@@ -5,37 +5,12 @@ spring:
+   application:
+     name: cf-carpark-admin
+   profiles:
+-    active: dev
+-  datasource:
+-    name: caifeng
+-    type: com.alibaba.druid.pool.DruidDataSource
+-    url: jdbc:mysql://mysql数据库地址:3306/caifeng?characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false
+-    username: caifeng
+-    password: mysql数据库密码
+-    driver-class-name: com.mysql.jdbc.Driver
+-    maxActive: 32
+-  redis:
+-    host: redis数据库地址
+-    port: 6379
+-    password: redis密码
+-    database: 0
+-    jedis:
+-      pool:
+-        maxActive: 3
+-        maxIdle: 3
+-        minIdle: 1
+-        maxWait: -1
++    active: dev,common
+   servlet:
+     multipart:
+       max-file-size: 10MB
+       max-request-size: 10MB
+-      #上传文件的中间位置
+       location: /home/app/tomcat_upload_temp
+-dubbo:
+-  application:
+-    name: ${spring.application.name}
+-  registry:
+-    address: zookeeper://127.0.0.1:2181
+ auth:
+   tokenValiditySeconds: 1200
+   clientId: oauth2用户名，记得在对应的数据库配置用户名
+diff --git a/cf-framework-parent/cf-internet-of-things/cf-car-park/cf-car-park-api/src/main/resources/application.yml b/cf-framework-parent/cf-internet-of-things/cf-car-park/cf-car-park-api/src/main/resources/application.yml
+index 2b477a1..b8c7a1d 100644
+--- a/cf-framework-parent/cf-internet-of-things/cf-car-park/cf-car-park-api/src/main/resources/application.yml
++++ b/cf-framework-parent/cf-internet-of-things/cf-car-park/cf-car-park-api/src/main/resources/application.yml
+@@ -5,21 +5,5 @@ spring:
+   application:
+     name: cf-carpark-api
+   profiles:
+-    active: dev
+-  redis:
+-    host: redis数据库地址
+-    port: 6379
+-    password: redis密码
+-    database: 0
+-    jedis:
+-      pool:
+-        maxActive: 3
+-        maxIdle: 3
+-        minIdle: 1
+-        maxWait: -1
+-dubbo:
+-  application:
+-    name: ${spring.application.name}
+-  registry:
+-    address: zookeeper://127.0.0.1:2181
++    active: dev,common
+ 
+diff --git a/cf-framework-parent/cf-internet-of-things/cf-car-park/cf-car-park-service/src/main/resources/application.yml b/cf-framework-parent/cf-internet-of-things/cf-car-park/cf-car-park-service/src/main/resources/application.yml
+index f3f1c02..876c761 100644
+--- a/cf-framework-parent/cf-internet-of-things/cf-car-park/cf-car-park-service/src/main/resources/application.yml
++++ b/cf-framework-parent/cf-internet-of-things/cf-car-park/cf-car-park-service/src/main/resources/application.yml
+@@ -5,46 +5,18 @@ spring:
+   application:
+     name: cf-carpark-service
+   profiles:
+-    active: dev
+-  datasource:
+-    name: caifeng
+-    type: com.alibaba.druid.pool.DruidDataSource
+-    url: jdbc:mysql://mysql数据库地址:3306/caifeng?characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false
+-    username: caifeng
+-    password: mysql数据库密码
+-    driver-class-name: com.mysql.jdbc.Driver
+-    maxActive: 32
+-  redis:
+-    host: redis数据库地址
+-    port: 6379
+-    password: redis密码
+-    database: 0
+-    jedis:
+-      pool:
+-        maxActive: 3
+-        maxIdle: 3
+-        minIdle: 1
+-        maxWait: -1
++    active: dev,common
+ 
+ #公共配置与profiles选择无关
+ mybatis:
+-  #  mapperScanPackage: com.cf.mapper
+-  #  typeAliasesPackage: com.cf.pojo
+   mapperLocations: classpath:com.cf.carpark.dao.mapper/*.xml
+   configLocation: classpath:config/SqlMapConfig.xml
+ dubbo:
+   scan:
+     base-packages: com.cf.carpark.service.impl
+-  application:
+-    name: ${spring.application.name}
+   protocol:
+-    name: dubbo
+     port: 20890
+     threads: 400
+-    accepts: 0
+-  registry:
+-    address: zookeeper://127.0.0.1:2181
+-  provider.filter: -exception
+ cf:
+   getIpUrl: https://park.cfeng.wang/ip
+ 
+diff --git a/cf-framework-parent/cf-internet-of-things/cf-charging/cf-charging-admin/src/main/resources/application.yml b/cf-framework-parent/cf-internet-of-things/cf-charging/cf-charging-admin/src/main/resources/application.yml
+index 97534d6..39d2224 100644
+--- a/cf-framework-parent/cf-internet-of-things/cf-charging/cf-charging-admin/src/main/resources/application.yml
++++ b/cf-framework-parent/cf-internet-of-things/cf-charging/cf-charging-admin/src/main/resources/application.yml
+@@ -5,21 +5,5 @@ spring:
+   application:
+     name: cf-charging-admin
+   profiles:
+-    active: dev
+-  redis:
+-    host: redis数据库地址
+-    port: 6379
+-    password: redis密码
+-    database: 0
+-    jedis:
+-      pool:
+-        maxActive: 3
+-        maxIdle: 3
+-        minIdle: 1
+-        maxWait: -1
+-dubbo:
+-  application:
+-    name: ${spring.application.name}
+-  registry:
+-    address: zookeeper://127.0.0.1:2181
++    active: dev,common
+ 
+diff --git a/cf-framework-parent/cf-internet-of-things/cf-charging/cf-charging-api/src/main/resources/application.yml b/cf-framework-parent/cf-internet-of-things/cf-charging/cf-charging-api/src/main/resources/application.yml
+index e3da0f4..27e140a 100644
+--- a/cf-framework-parent/cf-internet-of-things/cf-charging/cf-charging-api/src/main/resources/application.yml
++++ b/cf-framework-parent/cf-internet-of-things/cf-charging/cf-charging-api/src/main/resources/application.yml
+@@ -5,21 +5,5 @@ spring:
+   application:
+     name: cf-charging-api
+   profiles:
+-    active: dev
+-  redis:
+-    host: redis数据库地址
+-    port: 6379
+-    password: redis密码
+-    database: 0
+-    jedis:
+-      pool:
+-        maxActive: 3
+-        maxIdle: 3
+-        minIdle: 1
+-        maxWait: -1
+-dubbo:
+-  application:
+-    name: ${spring.application.name}
+-  registry:
+-    address: zookeeper://127.0.0.1:2181
++    active: dev,common
+ 
+diff --git a/cf-framework-parent/cf-internet-of-things/cf-charging/cf-charging-service/src/main/resources/application.yml b/cf-framework-parent/cf-internet-of-things/cf-charging/cf-charging-service/src/main/resources/application.yml
+index 93f4ed7..276c689 100644
+--- a/cf-framework-parent/cf-internet-of-things/cf-charging/cf-charging-service/src/main/resources/application.yml
++++ b/cf-framework-parent/cf-internet-of-things/cf-charging/cf-charging-service/src/main/resources/application.yml
+@@ -5,46 +5,17 @@ spring:
+   application:
+     name: cf-charging-service
+   profiles:
+-    active: dev
+-  datasource:
+-    name: caifeng
+-    type: com.alibaba.druid.pool.DruidDataSource
+-    url: jdbc:mysql://mysql数据库地址:3306/caifeng?characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false
+-    username: caifeng
+-    password: mysql数据库密码
+-    driver-class-name: com.mysql.jdbc.Driver
+-    maxActive: 32
+-  redis:
+-    host: redis数据库地址
+-    port: 6379
+-    password: redis密码
+-    database: 0
+-    jedis:
+-      pool:
+-        maxActive: 3
+-        maxIdle: 3
+-        minIdle: 1
+-        maxWait: -1
++    active: dev,common
+ 
+ #公共配置与profiles选择无关
+ mybatis:
+-  #  mapperScanPackage: com.cf.mapper
+-  #  typeAliasesPackage: com.cf.pojo
+   mapperLocations: classpath:com.cf.charging.dao.mapper/*.xml
+   configLocation: classpath:config/SqlMapConfig.xml
+ dubbo:
+   scan:
+     base-packages: com.cf.charging.service.impl
+-  application:
+-    name: ${spring.application.name}
+   protocol:
+-    name: dubbo
+     port: 28101
+-    threads: 200
+-    accepts: 0
+-  registry:
+-    address: zookeeper://127.0.0.1:2181
+-  provider.filter: -exception
+ 
+   # 数据源 ds0,ds1
+ #  shardingsphere:
+diff --git a/cf-framework-parent/cf-internet-of-things/cf-logistics/cf-logistics-admin/src/main/resources/application.yml b/cf-framework-parent/cf-internet-of-things/cf-logistics/cf-logistics-admin/src/main/resources/application.yml
+index 1d846aa..b59ba52 100644
+--- a/cf-framework-parent/cf-internet-of-things/cf-logistics/cf-logistics-admin/src/main/resources/application.yml
++++ b/cf-framework-parent/cf-internet-of-things/cf-logistics/cf-logistics-admin/src/main/resources/application.yml
+@@ -5,21 +5,5 @@ spring:
+   application:
+     name: cf-logistics-admin
+   profiles:
+-    active: dev
+-  redis:
+-    host: redis数据库地址
+-    port: 6379
+-    password: redis密码
+-    database: 0
+-    jedis:
+-      pool:
+-        maxActive: 3
+-        maxIdle: 3
+-        minIdle: 1
+-        maxWait: -1
+-dubbo:
+-  application:
+-    name: ${spring.application.name}
+-  registry:
+-    address: zookeeper://127.0.0.1:2181
++    active: dev,common
+ 
+diff --git a/cf-framework-parent/cf-internet-of-things/cf-logistics/cf-logistics-api/src/main/resources/application.yml b/cf-framework-parent/cf-internet-of-things/cf-logistics/cf-logistics-api/src/main/resources/application.yml
+index 9c786d9..a580861 100644
+--- a/cf-framework-parent/cf-internet-of-things/cf-logistics/cf-logistics-api/src/main/resources/application.yml
++++ b/cf-framework-parent/cf-internet-of-things/cf-logistics/cf-logistics-api/src/main/resources/application.yml
+@@ -5,21 +5,5 @@ spring:
+   application:
+     name: cf-logistics-api
+   profiles:
+-    active: dev
+-  redis:
+-    host: redis数据库地址
+-    port: 6379
+-    password: redis密码
+-    database: 0
+-    jedis:
+-      pool:
+-        maxActive: 3
+-        maxIdle: 3
+-        minIdle: 1
+-        maxWait: -1
+-dubbo:
+-  application:
+-    name: ${spring.application.name}
+-  registry:
+-    address: zookeeper://127.0.0.1:2181
++    active: dev,common
+ 
+diff --git a/cf-framework-parent/cf-internet-of-things/cf-logistics/cf-logistics-service/src/main/resources/application.yml b/cf-framework-parent/cf-internet-of-things/cf-logistics/cf-logistics-service/src/main/resources/application.yml
+index 90bb7f4..151ebcb 100644
+--- a/cf-framework-parent/cf-internet-of-things/cf-logistics/cf-logistics-service/src/main/resources/application.yml
++++ b/cf-framework-parent/cf-internet-of-things/cf-logistics/cf-logistics-service/src/main/resources/application.yml
+@@ -5,49 +5,18 @@ spring:
+   application:
+     name: cf-logistics-service
+   profiles:
+-    active: dev
+-  datasource:
+-    name: caifeng
+-    type: com.alibaba.druid.pool.DruidDataSource
+-    url: jdbc:mysql://mysql数据库地址:3306/caifeng?characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false
+-    username: caifeng
+-    password: mysql数据库密码
+-    driver-class-name: com.mysql.jdbc.Driver
+-    maxActive: 32
+-  redis:
+-    host: redis数据库地址
+-    port: 6379
+-    password: redis密码
+-    database: 0
+-    jedis:
+-      pool:
+-        maxActive: 3
+-        maxIdle: 3
+-        minIdle: 1
+-        maxWait: -1
++    active: dev,common
+ 
+ #公共配置与profiles选择无关
+ mybatis:
+-  #  mapperScanPackage: com.cf.mapper
+-  #  typeAliasesPackage: com.cf.pojo
+   mapperLocations: classpath:com.cf.logistics.dao.mapper/*.xml
+   configLocation: classpath:config/SqlMapConfig.xml
+ dubbo:
+   scan:
+     base-packages: com.cf.logistics.service.impl
+-  application:
+-    name: ${spring.application.name}
+   protocol:
+-    name: dubbo
+     port: 28104
+-    threads: 200
+-    accepts: 0
+-  registry:
+-    address: zookeeper://127.0.0.1:2181
+-  provider.filter: -exception
+-
+ logistics:
+-  #如果源地址为空，物流同步数据不会生效
+   tms-url: ""
+ 
+   # 数据源 ds0,ds1
+diff --git a/cf-framework-parent/cf-pay/cf-pay-admin/src/main/resources/application.yml b/cf-framework-parent/cf-pay/cf-pay-admin/src/main/resources/application.yml
+index 695a7d8..876ed7b 100644
+--- a/cf-framework-parent/cf-pay/cf-pay-admin/src/main/resources/application.yml
++++ b/cf-framework-parent/cf-pay/cf-pay-admin/src/main/resources/application.yml
+@@ -5,23 +5,7 @@ spring:
+   application:
+     name: cf-pay-admin
+   profiles:
+-    active: dev
+-  redis:
+-    host: redis数据库地址
+-    port: 6379
+-    password: redis密码
+-    database: 0
+-    jedis:
+-      pool:
+-        maxActive: 3
+-        maxIdle: 3
+-        minIdle: 1
+-        maxWait: -1
+-dubbo:
+-  application:
+-    name: ${spring.application.name}
+-  registry:
+-    address: zookeeper://127.0.0.1:2181
++    active: dev,common
+ auth:
+   tokenValiditySeconds: 1200
+   clientId: oauth2用户名，记得在对应的数据库配置用户名
+diff --git a/cf-framework-parent/cf-pay/cf-pay-api/src/main/resources/application.yml b/cf-framework-parent/cf-pay/cf-pay-api/src/main/resources/application.yml
+index 1fd11c2..a7daaec 100644
+--- a/cf-framework-parent/cf-pay/cf-pay-api/src/main/resources/application.yml
++++ b/cf-framework-parent/cf-pay/cf-pay-api/src/main/resources/application.yml
+@@ -5,21 +5,5 @@ spring:
+   application:
+     name: cf-pay-api
+   profiles:
+-    active: dev
+-  redis:
+-    host: redis数据库地址
+-    port: 6379
+-    password: redis密码
+-    database: 0
+-    jedis:
+-      pool:
+-        maxActive: 3
+-        maxIdle: 3
+-        minIdle: 1
+-        maxWait: -1
+-dubbo:
+-  application:
+-    name: ${spring.application.name}
+-  registry:
+-    address: zookeeper://127.0.0.1:2181
++    active: dev,common
+ 
+diff --git a/cf-framework-parent/cf-pay/cf-pay-service/src/main/resources/application.yml b/cf-framework-parent/cf-pay/cf-pay-service/src/main/resources/application.yml
+index 77bb452..b429a91 100644
+--- a/cf-framework-parent/cf-pay/cf-pay-service/src/main/resources/application.yml
++++ b/cf-framework-parent/cf-pay/cf-pay-service/src/main/resources/application.yml
+@@ -5,46 +5,17 @@ spring:
+   application:
+     name: cf-pay-service
+   profiles:
+-    active: dev
+-  datasource:
+-    name: caifeng
+-    type: com.alibaba.druid.pool.DruidDataSource
+-    url: jdbc:mysql://mysql数据库地址:3306/caifeng?characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false
+-    username: caifeng
+-    password: mysql数据库密码
+-    driver-class-name: com.mysql.jdbc.Driver
+-    maxActive: 32
+-  redis:
+-    host: redis数据库地址
+-    port: 6379
+-    password: redis密码
+-    database: 0
+-    jedis:
+-      pool:
+-        maxActive: 3
+-        maxIdle: 3
+-        minIdle: 1
+-        maxWait: -1
++    active: dev,common
+ 
+ #公共配置与profiles选择无关
+ mybatis:
+-  #  mapperScanPackage: com.cf.mapper
+-  #  typeAliasesPackage: com.cf.pojo
+   mapperLocations: classpath:com.cf.pay.dao.mapper/*.xml
+   configLocation: classpath:config/SqlMapConfig.xml
+ dubbo:
+   scan:
+     base-packages: com.cf.pay.service.impl
+-  application:
+-    name: ${spring.application.name}
+   protocol:
+-    name: dubbo
+     port: 20895
+-    threads: 200
+-    accepts: 0
+-  registry:
+-    address: zookeeper://127.0.0.1:2181
+-  provider.filter: -exception
+ 
+   # 数据源 ds0,ds1
+ #  shardingsphere:
+diff --git a/cf-framework-parent/cf-position/cf-position-api/src/main/resources/application.yml b/cf-framework-parent/cf-position/cf-position-api/src/main/resources/application.yml
+index 4c8d2e7..6da8c87 100644
+--- a/cf-framework-parent/cf-position/cf-position-api/src/main/resources/application.yml
++++ b/cf-framework-parent/cf-position/cf-position-api/src/main/resources/application.yml
+@@ -5,23 +5,7 @@ spring:
+   application:
+     name: cf-position-api
+   profiles:
+-    active: dev
+-  redis:
+-    host: redis数据库地址
+-    port: 6379
+-    password: redis密码
+-    database: 0
+-    jedis:
+-      pool:
+-        maxActive: 3
+-        maxIdle: 3
+-        minIdle: 1
+-        maxWait: -1
+-dubbo:
+-  application:
+-    name: ${spring.application.name}
+-  registry:
+-    address: zookeeper://127.0.0.1:2181
++    active: dev,common
+ auth:
+   tokenValiditySeconds: 1200
+   clientId: oauth2用户名，记得在对应的数据库配置用户名
+diff --git a/cf-framework-parent/cf-position/cf-position-service/src/main/resources/application.yml b/cf-framework-parent/cf-position/cf-position-service/src/main/resources/application.yml
+index 67d9514..6674a64 100644
+--- a/cf-framework-parent/cf-position/cf-position-service/src/main/resources/application.yml
++++ b/cf-framework-parent/cf-position/cf-position-service/src/main/resources/application.yml
+@@ -5,46 +5,17 @@ spring:
+   application:
+     name: cf-position-service
+   profiles:
+-    active: dev
+-  datasource:
+-    name: caifeng
+-    type: com.alibaba.druid.pool.DruidDataSource
+-    url: jdbc:mysql://mysql数据库地址:3306/caifeng?characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false
+-    username: caifeng
+-    password: mysql数据库密码
+-    driver-class-name: com.mysql.jdbc.Driver
+-    maxActive: 32
+-  redis:
+-    host: redis数据库地址
+-    port: 6379
+-    password: redis密码
+-    database: 0
+-    jedis:
+-      pool:
+-        maxActive: 3
+-        maxIdle: 3
+-        minIdle: 1
+-        maxWait: -1
++    active: dev,common
+ 
+ #公共配置与profiles选择无关
+ mybatis:
+-  #  mapperScanPackage: com.cf.mapper
+-  #  typeAliasesPackage: com.cf.pojo
+   mapperLocations: classpath:com.cf.position.dao.mapper/*.xml
+   configLocation: classpath:config/SqlMapConfig.xml
+ dubbo:
+   scan:
+     base-packages: com.cf.position.service.impl
+-  application:
+-    name: ${spring.application.name}
+   protocol:
+-    name: dubbo
+     port: 20893
+-    threads: 200
+-    accepts: 0
+-  registry:
+-    address: zookeeper://127.0.0.1:2181
+-  provider.filter: -exception
+ 
+   # 数据源 ds0,ds1
+ #  shardingsphere:
+diff --git a/cf-framework-parent/cf-sms/cf-sms-api/src/main/resources/application.yml b/cf-framework-parent/cf-sms/cf-sms-api/src/main/resources/application.yml
+index 3ad8255..0274281 100644
+--- a/cf-framework-parent/cf-sms/cf-sms-api/src/main/resources/application.yml
++++ b/cf-framework-parent/cf-sms/cf-sms-api/src/main/resources/application.yml
+@@ -5,10 +5,5 @@ spring:
+   application:
+     name: cf-sms-api
+   profiles:
+-    active: dev
+-dubbo:
+-  application:
+-    name: ${spring.application.name}
+-  registry:
+-    address: zookeeper://127.0.0.1:2181
++    active: dev,common
+ 
+diff --git a/cf-framework-parent/cf-sms/cf-sms-service/src/main/resources/application.yml b/cf-framework-parent/cf-sms/cf-sms-service/src/main/resources/application.yml
+index 054991b..e3bc7fd 100644
+--- a/cf-framework-parent/cf-sms/cf-sms-service/src/main/resources/application.yml
++++ b/cf-framework-parent/cf-sms/cf-sms-service/src/main/resources/application.yml
+@@ -5,46 +5,17 @@ spring:
+   application:
+     name: cf-sms-service
+   profiles:
+-    active: dev
+-  datasource:
+-    name: caifeng
+-    type: com.alibaba.druid.pool.DruidDataSource
+-    url: jdbc:mysql://mysql数据库地址:3306/caifeng?characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false
+-    username: caifeng
+-    password: mysql数据库密码
+-    driver-class-name: com.mysql.jdbc.Driver
+-    maxActive: 32
+-  redis:
+-    host: redis数据库地址
+-    port: 6379
+-    password: redis密码
+-    database: 0
+-    jedis:
+-      pool:
+-        maxActive: 3
+-        maxIdle: 3
+-        minIdle: 1
+-        maxWait: -1
++    active: dev,common
+ 
+ #公共配置与profiles选择无关
+ mybatis:
+-  #  mapperScanPackage: com.cf.mapper
+-  #  typeAliasesPackage: com.cf.pojo
+   mapperLocations: classpath:com.cf.sms.dao.mapper/*.xml
+   configLocation: classpath:config/SqlMapConfig.xml
+ dubbo:
+   scan:
+     base-packages: com.cf.sms.service.impl
+-  application:
+-    name: ${spring.application.name}
+   protocol:
+-    name: dubbo
+     port: 20884
+-    threads: 200
+-    accepts: 0
+-  registry:
+-    address: zookeeper://127.0.0.1:2181
+-  provider.filter: -exception
+ 
+   # 数据源 ds0,ds1
+ #  shardingsphere:
+diff --git a/cf-framework-parent/cf-ucenter/cf-ucenter-admin/src/main/resources/application.yml b/cf-framework-parent/cf-ucenter/cf-ucenter-admin/src/main/resources/application.yml
+index 81168ed..91ab30c 100644
+--- a/cf-framework-parent/cf-ucenter/cf-ucenter-admin/src/main/resources/application.yml
++++ b/cf-framework-parent/cf-ucenter/cf-ucenter-admin/src/main/resources/application.yml
+@@ -5,35 +5,11 @@ spring:
+   application:
+     name: cf-ucenter-admin
+   profiles:
+-    active: dev
+-  datasource:
+-    name: caifeng
+-    type: com.alibaba.druid.pool.DruidDataSource
+-    url: jdbc:mysql://mysql数据库地址:3306/caifeng?characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false
+-    username: caifeng
+-    password: mysql数据库密码
+-    driver-class-name: com.mysql.jdbc.Driver
+-    maxActive: 32
+-  redis:
+-    host: redis数据库地址
+-    port: 6379
+-    password: redis密码
+-    database: 0
+-    jedis:
+-      pool:
+-        maxActive: 3
+-        maxIdle: 3
+-        minIdle: 1
+-        maxWait: -1
++    active: dev,common
+   servlet:
+     multipart:
+       max-file-size: 10MB
+       max-request-size: 10MB
+-dubbo:
+-  application:
+-    name: ${spring.application.name}
+-  registry:
+-    address: zookeeper://127.0.0.1:2181
+ auth:
+   tokenValiditySeconds: 1200
+   clientId: oauth2用户名，记得在对应的数据库配置用户名
+diff --git a/cf-framework-parent/cf-ucenter/cf-ucenter-api/src/main/resources/application.yml b/cf-framework-parent/cf-ucenter/cf-ucenter-api/src/main/resources/application.yml
+index 3a20e0a..459cd8d 100644
+--- a/cf-framework-parent/cf-ucenter/cf-ucenter-api/src/main/resources/application.yml
++++ b/cf-framework-parent/cf-ucenter/cf-ucenter-api/src/main/resources/application.yml
+@@ -6,34 +6,14 @@ server:
+ spring:
+   application:
+     name: cf-ucenter-api
+-  datasource:
+-    name: caifeng
+-    type: com.alibaba.druid.pool.DruidDataSource
+-    url: jdbc:mysql://mysql数据库地址:3306/caifeng?characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false
+-    username: caifeng
+-    password: mysql数据库密码
+-    driver-class-name: com.mysql.jdbc.Driver
+-    maxActive: 32
+-  redis:
+-    host: redis数据库地址
+-    port: 6379
+-    password: redis密码
+-    database: 0
+-    jedis:
+-      pool:
+-        maxActive: 20
+-        maxIdle: 20
+-        minIdle: 10
+-        maxWait: -1
++  profiles:
++    active: dev,common
+ auth:
+-  tokenValiditySeconds: 1200  #redis的token的过期时间(暂时不用)
++  tokenValiditySeconds: 1200
+   clientId: oauth2用户名，记得在对应的数据库配置用户名
+   clientSecret: oauth2密码，记得在对应数据库配置密码
+   cookieDomain: xuecheng.com
+   cookieMaxAge: -1
+-dubbo:
+-  registry:
+-    address: zookeeper://127.0.0.1:2181
+ 
+ 
+ 
+diff --git a/cf-framework-parent/cf-ucenter/cf-ucenter-auth/src/main/resources/application.yml b/cf-framework-parent/cf-ucenter/cf-ucenter-auth/src/main/resources/application.yml
+index 3d804dc..56da58d 100644
+--- a/cf-framework-parent/cf-ucenter/cf-ucenter-auth/src/main/resources/application.yml
++++ b/cf-framework-parent/cf-ucenter/cf-ucenter-auth/src/main/resources/application.yml
+@@ -5,40 +5,20 @@ server:
+ spring:
+   application:
+     name: cf-ucenter-auth
+-  redis:
+-    host: redis数据库地址
+-    port: 6379
+-    password: redis密码
+-    database: 0
+-    jedis:
+-      pool:
+-        maxActive: 20
+-        maxIdle: 20
+-        minIdle: 10
+-        maxWait: -1
++  profiles:
++    active: dev,common
+   datasource:
+-    name: caifeng
+-    type: com.alibaba.druid.pool.DruidDataSource
+-    url: jdbc:mysql://mysql数据库地址:3306/caifeng?characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false
+-    username: caifeng
+-    password: mysql数据库密码
+-    driver-class-name: com.mysql.jdbc.Driver
+-    maxActive: 32
+     druid:
+-      url: ${MYSQL_URL:jdbc:mysql://mysql数据库地址:3306/caifeng?characterEncoding=utf-8&useSSL=false}
+-      username: caifeng
+-      password: mysql数据库密码
+-      driverClassName: com.mysql.jdbc.Driver
+-      initialSize: 5  #初始建立连接数量
+-      minIdle: 5  #最小连接数量
+-      maxActive: 20 #最大连接数量
+-      maxWait: 10000  #获取连接最大等待时间，毫秒
+-      testOnBorrow: true #申请连接时检测连接是否有效
+-      testOnReturn: false #归还连接时检测连接是否有效
+-      timeBetweenEvictionRunsMillis: 60000 #配置间隔检测连接是否有效的时间（单位是毫秒）
+-      minEvictableIdleTimeMillis: 300000  #连接在连接池的最小生存时间（毫秒）
++      initialSize: 5
++      minIdle: 5
++      maxActive: 20
++      maxWait: 10000
++      testOnBorrow: true
++      testOnReturn: false
++      timeBetweenEvictionRunsMillis: 60000
++      minEvictableIdleTimeMillis: 300000
+ auth:
+-  tokenValiditySeconds: 1200  #redis的token的过期时间(暂时不用)
++  tokenValiditySeconds: 1200
+   clientId: oauth2用户名，记得在对应的数据库配置用户名
+   clientSecret: oauth2密码，记得在对应数据库配置密码
+   cookieDomain: xuecheng.com
+@@ -53,15 +33,8 @@ encrypt:
+ dubbo:
+   scan:
+     base-packages: com.cf.ucenter.auth.service
+-  application:
+-    name: ${spring.application.name}
+   protocol:
+-    name: dubbo
+     port: 20882
+-  registry:
+-    address: zookeeper://127.0.0.1:2181
+-  provider:
+-    filter: -exception
+ 
+ 
+ 
+diff --git a/cf-framework-parent/cf-ucenter/cf-ucenter-interface/src/main/resources/application.yml b/cf-framework-parent/cf-ucenter/cf-ucenter-interface/src/main/resources/application.yml
+index b15b049..17e0fad 100644
+--- a/cf-framework-parent/cf-ucenter/cf-ucenter-interface/src/main/resources/application.yml
++++ b/cf-framework-parent/cf-ucenter/cf-ucenter-interface/src/main/resources/application.yml
+@@ -1,20 +1,10 @@
+ #默认使用配置
+ spring:
+   profiles:
+-    active: dev
+-  datasource:
+-    name: caifeng
+-    type: com.alibaba.druid.pool.DruidDataSource
+-    url: jdbc:mysql://mysql数据库地址:3306/caifeng?characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false
+-    username: caifeng
+-    password: mysql数据库密码
+-    driver-class-name: com.mysql.jdbc.Driver
+-    maxActive: 32
++    active: dev,common
+ 
+ #公共配置与profiles选择无关
+ mybatis:
+-#  mapperScanPackage: com.cf.mapper
+-#  typeAliasesPackage: com.cf.pojo
+   mapperLocations: classpath:com.cf.ucenter.dao.mapper/*.xml
+   configLocation: classpath:config/SqlMapConfig.xml
+ 
+diff --git a/cf-framework-parent/cf-ucenter/cf-ucenter-service/src/main/resources/application.yml b/cf-framework-parent/cf-ucenter/cf-ucenter-service/src/main/resources/application.yml
+index 9d1a36f..5555b86 100644
+--- a/cf-framework-parent/cf-ucenter/cf-ucenter-service/src/main/resources/application.yml
++++ b/cf-framework-parent/cf-ucenter/cf-ucenter-service/src/main/resources/application.yml
+@@ -5,46 +5,17 @@ spring:
+   application:
+     name: cf-ucenter-service
+   profiles:
+-    active: dev
+-  datasource:
+-    name: caifeng
+-    type: com.alibaba.druid.pool.DruidDataSource
+-    url: jdbc:mysql://mysql数据库地址:3306/caifeng?characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false
+-    username: caifeng
+-    password: mysql数据库密码
+-    driver-class-name: com.mysql.jdbc.Driver
+-    maxActive: 32
+-  redis:
+-    host: redis数据库地址
+-    port: 6379
+-    password: redis密码
+-    database: 0
+-    jedis:
+-      pool:
+-        maxActive: 20
+-        maxIdle: 20
+-        minIdle: 10
+-        maxWait: -1
++    active: dev,common
+ 
+ #公共配置与profiles选择无关
+ mybatis:
+-  #  mapperScanPackage: com.cf.mapper
+-  #  typeAliasesPackage: com.cf.pojo
+   mapperLocations: classpath:com.cf.ucenter.dao.mapper/*.xml
+   configLocation: classpath:config/SqlMapConfig.xml
+ dubbo:
+   scan:
+     base-packages: com.cf.ucenter.service.impl
+-  application:
+-    name: ${spring.application.name}
+   protocol:
+-    name: dubbo
+     port: 20881
+-    threads: 200
+-    accepts: 0
+-  registry:
+-    address: zookeeper://127.0.0.1:2181
+-  provider.filter: -exception
+ 
+ cf:
+   getIpUrl: https://park.cfeng.wang/ip
+diff --git a/docker-compose.example.yml b/docker-compose.example.yml
+new file mode 100644
+index 0000000..9df2a8e
+--- /dev/null
++++ b/docker-compose.example.yml
+@@ -0,0 +1,65 @@
++version: '3.8'
++
++services:
++  mysql:
++    image: mysql:8.0
++    environment:
++      MYSQL_ROOT_PASSWORD: root
++      MYSQL_DATABASE: caifeng
++      MYSQL_USER: caifeng
++      MYSQL_PASSWORD: your_password
++    ports:
++      - "3306:3306"
++    volumes:
++      - mysql_data:/var/lib/mysql
++
++  redis:
++    image: redis:7-alpine
++    ports:
++      - "6379:6379"
++    volumes:
++      - redis_data:/data
++
++  mongodb:
++    image: mongo:5
++    environment:
++      MONGO_INITDB_ROOT_USERNAME: caifeng
++      MONGO_INITDB_ROOT_PASSWORD: caifEng666
++    ports:
++      - "27017:27017"
++    volumes:
++      - mongo_data:/data/db
++
++  zookeeper:
++    image: zookeeper:3.8
++    ports:
++      - "2181:2181"
++    volumes:
++      - zookeeper_data:/data
++      - zookeeper_logs:/datalog
++
++  # FastDFS 示例配置
++  fastdfs-tracker:
++    image: season/fastdfs:1.2
++    command: tracker
++    volumes:
++      - fastdfs_tracker:/fastdfs/tracker
++
++  fastdfs-storage:
++    image: season/fastdfs:1.2
++    command: storage
++    environment:
++      TRACKER_SERVER: fastdfs-tracker:22122
++    volumes:
++      - fastdfs_storage:/fastdfs/storage
++    depends_on:
++      - fastdfs-tracker
++
++volumes:
++  mysql_data:
++  redis_data:
++  mongo_data:
++  zookeeper_data:
++  zookeeper_logs:
++  fastdfs_tracker:
++  fastdfs_storage:
