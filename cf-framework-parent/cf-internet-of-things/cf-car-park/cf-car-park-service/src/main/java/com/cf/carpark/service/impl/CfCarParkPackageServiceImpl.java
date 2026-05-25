@@ -336,12 +336,12 @@ public class CfCarParkPackageServiceImpl implements CfCarParkPackageService, App
         cfOrder.setPayTime(System.currentTimeMillis());
         cfOrder.setStatus(PayStatus.PAID);
         Long totalTIme = 0l;
-        BigDecimal price = cfCarParkPackagePrice.getCurrentPrice().doubleValue()>0?cfCarParkPackagePrice.getCurrentPrice():cfCarParkPackagePrice.getOriginalPrice();
+        BigDecimal price = cfCarParkPackagePrice.getCurrentPrice().compareTo(new BigDecimal("0.00"))>0?cfCarParkPackagePrice.getCurrentPrice():cfCarParkPackagePrice.getOriginalPrice();
         if(actionType.equals("add")){
             cfOrder.setGoodsName("【"+nowData.getNumberPlate()+"】现金购买车辆套餐");
             if(nowData.getQuantity()!=null && nowData.getQuantity()>0){
                 cfOrder.setPurchaseQuantity(nowData.getQuantity());
-                cfOrder.setAmountsPayable(new BigDecimal(nowData.getQuantity()*price.doubleValue()));
+                cfOrder.setAmountsPayable(price.multiply(new BigDecimal(nowData.getQuantity())));
                 //判断是否为月卡
                 if(cfCarParkPackagePrice.getTimeQuota().longValue()>2419199000l && cfCarParkPackagePrice.getTimeQuota().longValue()<=2678400000l){
                     Calendar calendar = Calendar.getInstance();
@@ -358,18 +358,18 @@ public class CfCarParkPackageServiceImpl implements CfCarParkPackageService, App
                 totalTIme = nowData.getEndTime()-nowData.getStartTime();
                 BigDecimal number = new BigDecimal(new Double(totalTIme) / cfCarParkPackagePrice.getTimeQuota()).setScale(2, RoundingMode.HALF_UP);
                 cfOrder.setPurchaseQuantity(number.intValue());
-                cfOrder.setAmountsPayable(new BigDecimal(number.doubleValue()*price.doubleValue()));
+                cfOrder.setAmountsPayable(price.multiply(new BigDecimal(number)));
             }
         }else{
             cfOrder.setGoodsName("【"+nowData.getNumberPlate()+"】现金续费车辆套餐");
             if(nowData.getQuantity()!=null && nowData.getQuantity()>0){
                 cfOrder.setPurchaseQuantity(nowData.getQuantity());
-                cfOrder.setAmountsPayable(new BigDecimal(nowData.getQuantity()*price.doubleValue()));
+                cfOrder.setAmountsPayable(price.multiply(new BigDecimal(nowData.getQuantity())));
             }else{
                 totalTIme = nowData.getEndTime()-oldData.getEndTime();
                 BigDecimal number = new BigDecimal(new Double(totalTIme) / cfCarParkPackagePrice.getTimeQuota()).setScale(2, RoundingMode.HALF_UP);
                 cfOrder.setPurchaseQuantity(number.intValue());
-                cfOrder.setAmountsPayable(new BigDecimal(number.doubleValue()*price.doubleValue()));
+                cfOrder.setAmountsPayable(price.multiply(new BigDecimal(number)));
             }
 
             //新增套餐修改记录

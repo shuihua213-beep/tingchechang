@@ -340,7 +340,7 @@ public class CfCarParkUseLogController implements CfCarParkUseLogSwagger {
                         usedCoupon = false;
                     }
                     if(cfCoupon.getCouponType()==(byte)1 ||
-                            (cfCoupon.getCouponType()==(byte)2 && cfCoupon.getDenomination().doubleValue()>=cfCarParkOrder.getCfOrder().getAmountsPayable().doubleValue()) ||
+                            (cfCoupon.getCouponType()==(byte)2 && cfCoupon.getDenomination().compareTo(cfCarParkOrder.getCfOrder().getAmountsPayable())>=0) ||
                             (cfCoupon.getCouponType()==(byte)3 && cfCoupon.getDenomination().longValue()+cfCarParkOrder.getCfCarParkUseLog().getInTime()>=cfCarParkOrder.getCfCarParkUseLog().getOutTime())
                     ){
                         //禁止手动优惠券全额支付

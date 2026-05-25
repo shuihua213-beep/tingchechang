@@ -159,7 +159,7 @@ public class CfCarParkUseLogController implements CfCarParkUseLogSwagger {
             return new ResponseResult(CommonCode.FAIL, null,"该订单已支付");
         }
 
-        if((updateLogAndOrderForm.getActionType().equals("cash_pay") || updateLogAndOrderForm.getActionType().equals("abnormal_termination_of_order")) && StringUtils.isNotEmpty(updateLogAndOrderForm.getAmountOfMoney()) && (new BigDecimal(updateLogAndOrderForm.getAmountOfMoney())).doubleValue()>=0){
+        if((updateLogAndOrderForm.getActionType().equals("cash_pay") || updateLogAndOrderForm.getActionType().equals("abnormal_termination_of_order")) && StringUtils.isNotEmpty(updateLogAndOrderForm.getAmountOfMoney()) && (new BigDecimal(updateLogAndOrderForm.getAmountOfMoney())).compareTo(new BigDecimal("0.00"))>=0){
             //暂时不允许收费自己修改金额
 //            cfOrder.setAmountActuallyPaid(new BigDecimal(amountOfMoney).add(cfOrder.getCollectionAmount()));
 //            if(cfOrder.getCollectionAmount().doubleValue()>0){
@@ -179,7 +179,7 @@ public class CfCarParkUseLogController implements CfCarParkUseLogSwagger {
                     CfCoupon coupon = new CfCoupon();
                     coupon.setId(updateLogAndOrderForm.getCouponId());
                     coupon.setUseTime(System.currentTimeMillis());
-                    if(cfOrder.getAmountsPayable().doubleValue()<cfCoupon.getDenomination().doubleValue()){
+                    if(cfOrder.getAmountsPayable().compareTo(cfCoupon.getDenomination())<0){
                         coupon.setAmountUsed(cfOrder.getAmountsPayable());
                     }else{
                         coupon.setAmountUsed(cfCoupon.getDenomination());
@@ -189,7 +189,7 @@ public class CfCarParkUseLogController implements CfCarParkUseLogSwagger {
 
                     cfOrder.setCouponId(updateLogAndOrderForm.getCouponId());
 
-                    if(cfOrder.getAmountsPayable().doubleValue()<cfCoupon.getDenomination().doubleValue()){
+                    if(cfOrder.getAmountsPayable().compareTo(cfCoupon.getDenomination())<0){
                         cfOrder.setCouponPaid(cfOrder.getAmountsPayable());
                         cfOrder.setAmountActuallyPaid(new BigDecimal(0.00));
                     }else{
