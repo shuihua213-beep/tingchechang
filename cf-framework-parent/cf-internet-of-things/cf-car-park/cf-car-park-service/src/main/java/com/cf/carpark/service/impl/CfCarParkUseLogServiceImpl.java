@@ -1,5 +1,7 @@
 package com.cf.carpark.service.impl;
 
+import java.math.BigDecimal;
+
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
@@ -1880,7 +1882,7 @@ public class CfCarParkUseLogServiceImpl implements CfCarParkUseLogService {
         CfCarParkUseLog carParkUseLog = add(cfCarParkUseLog);
 
         CfCarParkOrder cfCarParkOrder = new CfCarParkOrder();
-        if(cfCarPark.getSubscribeFee().doubleValue()>0){
+        if(cfCarPark.getSubscribeFee().compareTo(BigDecimal.ZERO) > 0){
             CfOrder cfOrder = new CfOrder();
             cfOrder.setUid(cfCarParkUseLog.getUid());
             cfOrder.setGoodsName("停车缴费:"+cfCarParkUseLog.getNumberPlate()+"[含预约]");
