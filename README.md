@@ -32,6 +32,13 @@
 
 【部署环境】： 目前仅测试linux环境一切正常，win环境没部署过，演示地址在本文章末尾
 
+【统一环境变量与 Docker Compose 启动说明】：
+1．仓库已经统一收敛 MySQL、Redis、MongoDB、Dubbo/Zookeeper、FastDFS、MinIO、前置转发模块等环境变量，公共默认值位于 cf-framework-parent/cf-framework-utils/src/main/resources/bootstrap.yml，中间件默认本地开发地址为 127.0.0.1，对应 Docker Compose 地址统一写入根目录 .env。
+2．本地开发如果不设置任何环境变量，默认读取 bootstrap.yml 中的本地值；如果希望使用 Docker Compose 提供的中间件，直接执行 docker compose up -d 即可，根目录 .env 会自动为容器内服务注入统一变量。
+3．如需修改部署环境，不要再逐个改 application.yml，统一修改根目录 .env 或执行 ./replace.sh <zookeeper主机> <mysql主机> <mysql用户> <mysql密码> <redis主机> <redis密码> <mongo主机> <mongo用户> <mongo密码> 生成新的 .env。
+4．如需本地打包并启动全部 jar，执行 ./package.sh && ./start.sh；如需使用容器方式直接拉起基础设施和服务，执行 docker compose up -d --build。
+5．本次统一变量命名示例：CF_MYSQL_HOST、CF_MYSQL_PORT、CF_MYSQL_DATABASE、CF_REDIS_HOST、CF_MONGODB_HOST、CF_ZOOKEEPER_HOST、CF_DUBBO_REGISTRY_ADDRESS、CF_FASTDFS_TRACKER_SERVERS、CF_MINIO_ENDPOINT。后续新增模块请直接复用这一组变量，禁止继续写死地址。
+
 【关于作者】： 屌丝码农一枚，6年前曾就职于开发停车场系统的公司，发现目前国内该领域垄断，技术过于陈旧，没有一个规范，故个人用来接近3年的时间在业余时间开发出这种系统，现代化标准的互联网应用，定位大型物联网大数据云平台系统，我个人微信Dove981011512，如果你在部署我这套系统中遇到问题或者发现存在漏洞的请联系我，存在不足之处还望多多提宝贵意见，让我们打破市场垄断，让物联网应用更好的服务生活社会
 
 软件架构 一、技术构成简述 （一）编程语言与架构简述 1．开发语言 （1）服务端 服务端语言目前均采用java语言开发，jdk版本要求1.8+。开发框架为springboot2+dubbo，鉴权采用oauth2，DB操作框架Mybaits，即时通讯底层框架与协议netty4

@@ -13,10 +13,10 @@ public class LoginPanel extends JPanel {
 	private static final long serialVersionUID = 1L;
 	
 	//登陆参数
-	private String s_strIp		   = "172.32.100.88";/*"172.23.12.17";*/ //"192.168.7.61";
-	private Integer s_nPort        = new Integer("37777");
-	private String s_strUser       = "admin";
-	private String s_strPassword   = "admin123";
+	private String s_strIp		   = System.getenv("CF_FORWARD_DH_CAMERA_IP") == null ? "127.0.0.1" : System.getenv("CF_FORWARD_DH_CAMERA_IP");
+	private Integer s_nPort        = Integer.valueOf(System.getenv("CF_FORWARD_DH_CAMERA_PORT") == null ? "37777" : System.getenv("CF_FORWARD_DH_CAMERA_PORT"));
+	private String s_strUser       = System.getenv("CF_FORWARD_DH_CAMERA_USERNAME") == null ? "admin" : System.getenv("CF_FORWARD_DH_CAMERA_USERNAME");
+	private String s_strPassword   = System.getenv("CF_FORWARD_DH_CAMERA_PASSWORD") == null ? "admin123" : System.getenv("CF_FORWARD_DH_CAMERA_PASSWORD");
 	
 	public LoginPanel() {
 		BorderEx.set(this, Res.string().getLogin(), 2);

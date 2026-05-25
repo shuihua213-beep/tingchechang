@@ -7,18 +7,18 @@ spring:
   application:
     name: cf-ucenter-api
   datasource:
-    name: caifeng
+    name: ${cf.env.mysql.database}
     type: com.alibaba.druid.pool.DruidDataSource
-    url: jdbc:mysql://mysql数据库地址:3306/caifeng?characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false
-    username: caifeng
-    password: mysql数据库密码
+    url: ${cf.env.mysql.url}
+    username: ${cf.env.mysql.username}
+    password: ${cf.env.mysql.password}
     driver-class-name: com.mysql.jdbc.Driver
     maxActive: 32
   redis:
-    host: redis数据库地址
-    port: 6379
-    password: redis密码
-    database: 0
+    host: ${cf.env.redis.host}
+    port: ${cf.env.redis.port}
+    password: ${cf.env.redis.password}
+    database: ${cf.env.redis.database}
     jedis:
       pool:
         maxActive: 20
@@ -26,16 +26,11 @@ spring:
         minIdle: 10
         maxWait: -1
 auth:
-  tokenValiditySeconds: 1200  #redis的token的过期时间(暂时不用)
-  clientId: oauth2用户名，记得在对应的数据库配置用户名
-  clientSecret: oauth2密码，记得在对应数据库配置密码
-  cookieDomain: xuecheng.com
-  cookieMaxAge: -1
+  tokenValiditySeconds: ${cf.env.auth.token-validity-seconds}
+  clientId: ${cf.env.auth.client-id}
+  clientSecret: ${cf.env.auth.client-secret}
+  cookieDomain: ${cf.env.auth.cookie-domain}
+  cookieMaxAge: ${cf.env.auth.cookie-max-age}
 dubbo:
   registry:
-    address: zookeeper://127.0.0.1:2181
-
-
-
-
-
+    address: ${cf.env.dubbo.registry-address}

@@ -1,24 +1,60 @@
 #!/bin/bash
-IP=$1
-DBIP=$2
-DBUSER=$3
-DBPWD=$4
-RDIP=$5
-RDPWD=$6
-MGIP=$7
-MGUSER=$8
-MGPWD=$9
+set -e
 
-find /www/java/cf_bak/ -type f -regex ".*\.yml\|.*\.properties" |xargs perl -pi -e"s/zookeeper:\/\/47.100.11.151/zookeeper:\/\/${IP}/g"
+ROOT_DIR=$(cd "$(dirname "$0")" && pwd)
+ENV_FILE="$ROOT_DIR/.env"
 
-find /www/java/cf_bak/ -type f -regex ".*\.yml\|.*\.properties" |xargs perl -pi -e"s/mysql:\/\/47.100.11.151/mysql:\/\/${DBIP}/g"
+cat >"$ENV_FILE" <<EOF
+CF_SPRING_PROFILE=docker
+CF_MYSQL_HOST=${2:-mysql}
+CF_MYSQL_PORT=${CF_MYSQL_PORT:-3306}
+CF_MYSQL_DATABASE=${CF_MYSQL_DATABASE:-caifeng}
+CF_MYSQL_USERNAME=${3:-caifeng}
+CF_MYSQL_PASSWORD=${4:-caifeng123}
+CF_REDIS_HOST=${5:-redis}
+CF_REDIS_PORT=${CF_REDIS_PORT:-6379}
+CF_REDIS_PASSWORD=${6:-}
+CF_REDIS_DATABASE=${CF_REDIS_DATABASE:-0}
+CF_MONGODB_HOST=${7:-mongodb}
+CF_MONGODB_PORT=${CF_MONGODB_PORT:-27017}
+CF_MONGODB_DATABASE=${CF_MONGODB_DATABASE:-caifeng}
+CF_MONGODB_USERNAME=${8:-caifeng}
+CF_MONGODB_PASSWORD=${9:-caifEng666}
+CF_MONGODB_AUTH_DATABASE=${CF_MONGODB_AUTH_DATABASE:-admin}
+CF_ZOOKEEPER_HOST=${1:-zookeeper}
+CF_ZOOKEEPER_PORT=${CF_ZOOKEEPER_PORT:-2181}
+CF_DUBBO_REGISTRY_ADDRESS=zookeeper://${1:-zookeeper}:${CF_ZOOKEEPER_PORT:-2181}
+CF_FASTDFS_TRACKER_SERVERS=${CF_FASTDFS_TRACKER_SERVERS:-fastdfs-tracker:22122}
+CF_MINIO_ENDPOINT=${CF_MINIO_ENDPOINT:-http://minio:9000}
+CF_MINIO_ACCESS_KEY=${CF_MINIO_ACCESS_KEY:-minioadmin}
+CF_MINIO_SECRET_KEY=${CF_MINIO_SECRET_KEY:-minioadmin}
+CF_MINIO_BUCKET=${CF_MINIO_BUCKET:-caifeng}
+CF_AUTH_TOKEN_VALIDITY_SECONDS=${CF_AUTH_TOKEN_VALIDITY_SECONDS:-1200}
+CF_AUTH_CLIENT_ID=${CF_AUTH_CLIENT_ID:-oauth2}
+CF_AUTH_CLIENT_SECRET=${CF_AUTH_CLIENT_SECRET:-oauth2-secret}
+CF_AUTH_COOKIE_DOMAIN=${CF_AUTH_COOKIE_DOMAIN:-localhost}
+CF_AUTH_COOKIE_MAX_AGE=${CF_AUTH_COOKIE_MAX_AGE:--1}
+CF_AUTH_SERVICE_URL=${CF_AUTH_SERVICE_URL:-http://app:8082/auth}
+CF_SMART_AUTH_URL=${CF_SMART_AUTH_URL:-http://127.0.0.1:16007/authority/api/getAuthenticate}
+CF_FORWARD_HK_BASE_URL=${CF_FORWARD_HK_BASE_URL:-http://app:8089}
+CF_FORWARD_HK_LOCAL_IP=${CF_FORWARD_HK_LOCAL_IP:-127.0.0.1}
+CF_FORWARD_HK_DEVICE_IP=${CF_FORWARD_HK_DEVICE_IP:-127.0.0.1}
+CF_FORWARD_HK_PORT=${CF_FORWARD_HK_PORT:-8000}
+CF_FORWARD_HK_USERNAME=${CF_FORWARD_HK_USERNAME:-admin}
+CF_FORWARD_HK_PASSWORD=${CF_FORWARD_HK_PASSWORD:-admin123}
+CF_FORWARD_HK_SERVER_PORT=${CF_FORWARD_HK_SERVER_PORT:-8071}
+CF_FORWARD_DH_CODING=${CF_FORWARD_DH_CODING:-GBK}
+CF_FORWARD_DH_LED_BRAND=${CF_FORWARD_DH_LED_BRAND:-yang_bang}
+CF_FORWARD_DH_SERVER_PORT=${CF_FORWARD_DH_SERVER_PORT:-8070}
+CF_FORWARD_DH_CAMERA_IP=${CF_FORWARD_DH_CAMERA_IP:-127.0.0.1}
+CF_FORWARD_DH_CAMERA_SERVER=${CF_FORWARD_DH_CAMERA_SERVER:-http://app:8089}
+CF_FORWARD_DH_CAMERA_PORT=${CF_FORWARD_DH_CAMERA_PORT:-37777}
+CF_FORWARD_DH_CAMERA_USERNAME=${CF_FORWARD_DH_CAMERA_USERNAME:-admin}
+CF_FORWARD_DH_CAMERA_PASSWORD=${CF_FORWARD_DH_CAMERA_PASSWORD:-admin123}
+CF_FORWARD_DH_CAMERA_UUID=${CF_FORWARD_DH_CAMERA_UUID:-DEFAULT-CAMERA}
+CF_FORWARD_DH_LED_IP=${CF_FORWARD_DH_LED_IP:-127.0.0.1}
+CF_FORWARD_DH_LED_PORT=${CF_FORWARD_DH_LED_PORT:-5005}
+CF_FORWARD_DH_LED_UUID=${CF_FORWARD_DH_LED_UUID:-DEFAULT-CAMERA}
+EOF
 
-find /www/java/cf_bak/ -type f -regex ".*\.yml\|.*\.properties" |xargs perl -pi -e"s/username: caifeng/username: ${DBUSER}/g"
-
-find /www/java/cf_bak/ -type f -regex ".*\.yml\|.*\.properties" |xargs perl -pi -e"s/password: P8CMBiepXSLRfGAL/password: ${DBPWD}/g"
-
-find /www/java/cf_bak/ -type f -regex ".*\.yml\|.*\.properties" |xargs perl -pi -e"s/host: 47.100.11.151/host: ${RDIP}/g"
-
-find /www/java/cf_bak/ -type f -regex ".*\.yml\|.*\.properties" |xargs perl -pi -e"s/password: gebixiaowang/password: ${RDPWD}/g"
-
-find /www/java/cf_bak/ -type f -regex ".*\.yml\|.*\.properties" |xargs perl -pi -e"s/mongodb:\/\/caifeng:caifEng666@47.100.11.151:27017\/\?authSource=caifeng/mongodb:\/\/${MGUSER}:${MGPWD}@${MGIP}:27017\/\?authSource=caifeng/g"
+printf '已生成 %s\n' "$ENV_FILE"

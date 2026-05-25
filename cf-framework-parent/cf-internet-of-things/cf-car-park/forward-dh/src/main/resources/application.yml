@@ -1,5 +1,5 @@
 server:
-  port: 8070
+  port: ${cf.env.forward.dh.server-port}
   servlet:
     context-path: /
 spring:
@@ -7,39 +7,16 @@ spring:
     name: cf-dh
 dh:
   forward:
-    coding: GBK
-    ledBrand: yang_bang
+    coding: ${cf.env.forward.dh.coding}
+    ledBrand: ${cf.env.forward.dh.led-brand}
     cameraInfoes:
-      - ip: 192.168.3.200
-        server: http://192.168.3.19:8089
-        port: 37777
-        username: admin
-        password: admin123
-        uuid: 6F01FFAPAJ65519
-#      - ip: 10.66.52.101
-#        server: https://parking-api.ebatech.cn
-#        port: 37777
-#        username: admin
-#        password: admin123
-#        uuid: 7C0AEEDPAJ2A1A2
-#      - ip: 10.66.52.102
-#        server: https://parking-api.ebatech.cn
-#        port: 37777
-#        username: admin
-#        password: admin123
-#        uuid: 7C0AEEDPAJ9B4D5
-#      - ip: 10.66.52.103
-#        server: https://parking-api.ebatech.cn
-#        port: 37777
-#        username: admin
-#        password: admin123
-#        uuid: 7C0AEEDPAJCE7F8
+      - ip: ${cf.env.forward.dh.camera-primary.ip}
+        server: ${cf.env.forward.dh.camera-primary.server}
+        port: ${cf.env.forward.dh.camera-primary.port}
+        username: ${cf.env.forward.dh.camera-primary.username}
+        password: ${cf.env.forward.dh.camera-primary.password}
+        uuid: ${cf.env.forward.dh.camera-primary.uuid}
     ledConfigs:
-      - ip: 192.168.3.250
-        port: 5005
-        uuid: 6F01FFAPAJ65519
-
-
-
-
-
+      - ip: ${cf.env.forward.dh.led-primary.ip}
+        port: ${cf.env.forward.dh.led-primary.port}
+        uuid: ${cf.env.forward.dh.led-primary.uuid}

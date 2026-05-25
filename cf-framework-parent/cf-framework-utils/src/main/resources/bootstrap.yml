@@ -1,0 +1,68 @@
+spring:
+  profiles:
+    active: ${CF_SPRING_PROFILE:dev}
+cf:
+  env:
+    mysql:
+      host: ${CF_MYSQL_HOST:127.0.0.1}
+      port: ${CF_MYSQL_PORT:3306}
+      database: ${CF_MYSQL_DATABASE:caifeng}
+      username: ${CF_MYSQL_USERNAME:caifeng}
+      password: ${CF_MYSQL_PASSWORD:caifeng123}
+      params: ${CF_MYSQL_PARAMS:characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false}
+      url: jdbc:mysql://${cf.env.mysql.host}:${cf.env.mysql.port}/${cf.env.mysql.database}?${cf.env.mysql.params}
+    redis:
+      host: ${CF_REDIS_HOST:127.0.0.1}
+      port: ${CF_REDIS_PORT:6379}
+      password: ${CF_REDIS_PASSWORD:}
+      database: ${CF_REDIS_DATABASE:0}
+    mongodb:
+      host: ${CF_MONGODB_HOST:127.0.0.1}
+      port: ${CF_MONGODB_PORT:27017}
+      database: ${CF_MONGODB_DATABASE:caifeng}
+      username: ${CF_MONGODB_USERNAME:caifeng}
+      password: ${CF_MONGODB_PASSWORD:caifEng666}
+      auth-database: ${CF_MONGODB_AUTH_DATABASE:admin}
+      uri: mongodb://${cf.env.mongodb.username}:${cf.env.mongodb.password}@${cf.env.mongodb.host}:${cf.env.mongodb.port}/?authSource=${cf.env.mongodb.auth-database}
+    dubbo:
+      registry-address: ${CF_DUBBO_REGISTRY_ADDRESS:zookeeper://${CF_ZOOKEEPER_HOST:127.0.0.1}:${CF_ZOOKEEPER_PORT:2181}}
+    fastdfs:
+      tracker-servers: ${CF_FASTDFS_TRACKER_SERVERS:127.0.0.1:22122}
+    minio:
+      endpoint: ${CF_MINIO_ENDPOINT:http://127.0.0.1:9000}
+      access-key: ${CF_MINIO_ACCESS_KEY:minioadmin}
+      secret-key: ${CF_MINIO_SECRET_KEY:minioadmin}
+      bucket: ${CF_MINIO_BUCKET:caifeng}
+    auth:
+      token-validity-seconds: ${CF_AUTH_TOKEN_VALIDITY_SECONDS:1200}
+      client-id: ${CF_AUTH_CLIENT_ID:oauth2}
+      client-secret: ${CF_AUTH_CLIENT_SECRET:oauth2-secret}
+      cookie-domain: ${CF_AUTH_COOKIE_DOMAIN:localhost}
+      cookie-max-age: ${CF_AUTH_COOKIE_MAX_AGE:-1}
+      service-url: ${CF_AUTH_SERVICE_URL:http://127.0.0.1:8082/auth}
+    smart-construction:
+      authority-url: ${CF_SMART_AUTH_URL:http://127.0.0.1:16007/authority/api/getAuthenticate}
+    forward:
+      hk:
+        base-url: ${CF_FORWARD_HK_BASE_URL:http://127.0.0.1:8089}
+        local-ip: ${CF_FORWARD_HK_LOCAL_IP:127.0.0.1}
+        device-ip: ${CF_FORWARD_HK_DEVICE_IP:127.0.0.1}
+        port: ${CF_FORWARD_HK_PORT:8000}
+        username: ${CF_FORWARD_HK_USERNAME:admin}
+        password: ${CF_FORWARD_HK_PASSWORD:admin123}
+        server-port: ${CF_FORWARD_HK_SERVER_PORT:8071}
+      dh:
+        coding: ${CF_FORWARD_DH_CODING:GBK}
+        led-brand: ${CF_FORWARD_DH_LED_BRAND:yang_bang}
+        server-port: ${CF_FORWARD_DH_SERVER_PORT:8070}
+        camera-primary:
+          ip: ${CF_FORWARD_DH_CAMERA_IP:127.0.0.1}
+          server: ${CF_FORWARD_DH_CAMERA_SERVER:http://127.0.0.1:8089}
+          port: ${CF_FORWARD_DH_CAMERA_PORT:37777}
+          username: ${CF_FORWARD_DH_CAMERA_USERNAME:admin}
+          password: ${CF_FORWARD_DH_CAMERA_PASSWORD:admin123}
+          uuid: ${CF_FORWARD_DH_CAMERA_UUID:DEFAULT-CAMERA}
+        led-primary:
+          ip: ${CF_FORWARD_DH_LED_IP:127.0.0.1}
+          port: ${CF_FORWARD_DH_LED_PORT:5005}
+          uuid: ${CF_FORWARD_DH_LED_UUID:DEFAULT-CAMERA}

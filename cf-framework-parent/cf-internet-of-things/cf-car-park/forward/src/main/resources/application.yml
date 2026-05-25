@@ -1,5 +1,5 @@
 server:
-  port: ${random.int[1024,9999]}
+  port: ${cf.env.forward.hk.server-port}
   servlet:
     context-path: /
 spring:
@@ -7,14 +7,9 @@ spring:
     name: cf-hk
 hk:
   forward:
-    baseUrl: http://192.168.3.19
-    localIP: 192.168.3.252
-#    deviceIP: 192.168.10.61,192.168.10.62,192.168.10.63,192.168.10.64
-    deviceIP: 192.168.3.249
-    port: 8000
-    username: admin
-    password: abcde12345
-
-
-
-
+    baseUrl: ${cf.env.forward.hk.base-url}
+    localIP: ${cf.env.forward.hk.local-ip}
+    deviceIP: ${cf.env.forward.hk.device-ip}
+    port: ${cf.env.forward.hk.port}
+    username: ${cf.env.forward.hk.username}
+    password: ${cf.env.forward.hk.password}

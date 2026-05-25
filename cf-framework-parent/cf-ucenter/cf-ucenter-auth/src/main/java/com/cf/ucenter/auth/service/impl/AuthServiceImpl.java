@@ -69,6 +69,8 @@ public class AuthServiceImpl implements AuthService {
     String keyStoreAlias;
     @Value("${encrypt.key-store.password}")
     String keyStorePassword;
+    @Value("${cf.env.auth.service-url}")
+    String authServiceUrl;
     @Autowired
     StringRedisTemplate stringRedisTemplate;
     @Autowired
@@ -179,8 +181,7 @@ public class AuthServiceImpl implements AuthService {
 //        ServiceInstance serviceInstance = loadBalancerClient.choose(XcServiceList.XC_SERVICE_UCENTER_AUTH);
         //此地址就是http://ip:port
 //        URI uri = serviceInstance.getUri();
-        //令牌申请的地址 http://localhost:40400/auth/oauth/token
-        String authUrl = "http://localhost:8082/auth/oauth/token";
+        String authUrl = authServiceUrl + "/oauth/token";
         //定义header
         LinkedMultiValueMap<String, String> header = new LinkedMultiValueMap<>();
         String httpBasic = getHttpBasic(clientId, clientSecret);

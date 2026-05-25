@@ -54,6 +54,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.annotation.Reference;
 import org.apache.dubbo.config.annotation.Service;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -70,6 +71,8 @@ import java.util.*;
 @Service(version = "1.0.0", loadbalance = "roundrobin")
 @Transactional
 public class CfCarParkUseLogServiceImpl implements CfCarParkUseLogService {
+    @Value("${cf.env.smart-construction.authority-url}")
+    private String smartConstructionAuthorityUrl;
     @Autowired
     CfCarParkUseLogMapper cfCarParkUseLogMapper;
     @Autowired
@@ -2070,7 +2073,7 @@ public class CfCarParkUseLogServiceImpl implements CfCarParkUseLogService {
             params.put("rand",StringTools.getRandomString("", 12));
             Map<String, String> header = new HashMap<>();
             header.put("Content-Type","application/json");
-            JSONObject result = (JSONObject)HttpClient.doPost(params, "http://127.0.0.1:16007/authority/api/getAuthenticate", header, true);
+            JSONObject result = (JSONObject)HttpClient.doPost(params, smartConstructionAuthorityUrl, header, true);
             if(result.containsKey("code") && result.getString("code").equals("0")){
                 token = ((Map<String, String>)result.get("data")).get("token").toString();
                 CfWeixinConfig cfWeixinConfig = new CfWeixinConfig();
@@ -2091,7 +2094,7 @@ public class CfCarParkUseLogServiceImpl implements CfCarParkUseLogService {
             params.put("timeStamp",System.currentTimeMillis());
             params.put("rand",StringTools.getRandomString("", 12));
             Map<String, String> header = new HashMap<>();
-            JSONObject result = (JSONObject)HttpClient.doPost(params, "http://127.0.0.1:16007/authority/api/getAuthenticate", header, true);
+            JSONObject result = (JSONObject)HttpClient.doPost(params, smartConstructionAuthorityUrl, header, true);
             if(result.containsKey("code") && result.getString("code").equals("0")){
                 token = ((Map<String, String>)result.get("data")).get("token").toString();
                 weixinConfigs.get(0).setValue(token);
