@@ -44,7 +44,6 @@
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-crypto</artifactId>
-            <version>4.2.3.RELEASE</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.springframework.security/spring-security-jwt -->
         <dependency>
@@ -52,11 +51,10 @@
             <artifactId>spring-security-jwt</artifactId>
             <version>1.0.8.RELEASE</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.springframework/spring-mock -->
+        <!-- https://mvnrepository.com/artifact/org.springframework/spring-test -->
         <dependency>
             <groupId>org.springframework</groupId>
-            <artifactId>spring-mock</artifactId>
-            <version>2.0.8</version>
+            <artifactId>spring-test</artifactId>
         </dependency>
         <!-- 二维码 -->
         <dependency>
@@ -113,7 +111,6 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>2.1.1.RELEASE</version>
             </plugin>
         </plugins>
     </build>
