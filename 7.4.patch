@@ -1,0 +1,181 @@
+diff --git a/cf-framework-parent/cf-ucenter/cf-ucenter-admin/src/main/java/com/cf/ucenter/admin/controller/UcenterController.java b/cf-framework-parent/cf-ucenter/cf-ucenter-admin/src/main/java/com/cf/ucenter/admin/controller/UcenterController.java
+index 7c5e250..5db062e 100644
+--- a/cf-framework-parent/cf-ucenter/cf-ucenter-admin/src/main/java/com/cf/ucenter/admin/controller/UcenterController.java
++++ b/cf-framework-parent/cf-ucenter/cf-ucenter-admin/src/main/java/com/cf/ucenter/admin/controller/UcenterController.java
+@@ -5,6 +5,7 @@ import com.cf.framework.domain.report.CountByDay;
+ import com.cf.framework.domain.response.CommonCode;
+ import com.cf.framework.domain.response.ResponseResult;
+ import com.cf.framework.domain.ucenter.ext.UserBasicInfo;
++import com.cf.framework.utils.DateUtil;
+ import com.cf.framework.utils.HttpHearderUtils;
+ import com.cf.ucenter.admin.config.AuthenticationInterceptor;
+ import com.cf.ucenter.admin.swagger.UcenterSwagger;
+@@ -14,6 +15,9 @@ import com.cf.ucenter.request.CfUserForm;
+ import com.cf.ucenter.request.CfUserQuery;
+ import com.cf.ucenter.service.CfUserService;
+ import org.apache.dubbo.config.annotation.Reference;
++import org.apache.poi.ss.usermodel.Row;
++import org.apache.poi.ss.usermodel.Sheet;
++import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+ import org.springframework.beans.BeanUtils;
+ import org.springframework.beans.factory.annotation.Autowired;
+ import org.springframework.security.access.prepost.PreAuthorize;
+@@ -21,9 +25,11 @@ import org.springframework.validation.annotation.Validated;
+ import org.springframework.web.bind.annotation.*;
+ 
+ import javax.servlet.http.HttpServletRequest;
++import javax.servlet.http.HttpServletResponse;
+ import javax.validation.constraints.NotEmpty;
+ import javax.validation.constraints.Pattern;
+ import javax.validation.constraints.Size;
++import java.io.OutputStream;
+ import java.util.ArrayList;
+ import java.util.HashMap;
+ import java.util.List;
+@@ -132,6 +138,75 @@ public class UcenterController implements UcenterSwagger {
+         return new ResponseResult(CommonCode.NO_MORE_DATAS);
+     }
+ 
++    @PreAuthorize("hasAuthority('ucenter-UcenterController-selectListByCondition')")
++    @Override
++    @RequestMapping(value = "exportUserExcel", method = RequestMethod.GET)
++    public void exportUserExcel(HttpServletResponse response, String conditions) throws Exception {
++        Map conditionsMap = (JSONObject.parseObject(conditions));
++        ArrayList<String> allowFileds = new ArrayList<>();
++        allowFileds.add("id");
++        allowFileds.add("user_name");
++        allowFileds.add("type");
++        allowFileds.add("nick_name");
++        allowFileds.add("true_name");
++        allowFileds.add("phone");
++        allowFileds.add("sex");
++        allowFileds.add("create_time");
++        allowFileds.add("like");
++        allowFileds.add("order");
++        Map<String, String> allowFiledsMap = new HashMap<String, String>();
++        allowFiledsMap.put("id","u");
++        allowFiledsMap.put("user_name","u");
++        allowFiledsMap.put("type","u");
++        allowFiledsMap.put("nick_name","u");
++        allowFiledsMap.put("true_name","u");
++        allowFiledsMap.put("phone","u");
++        allowFiledsMap.put("sex","u");
++        allowFiledsMap.put("create_time","u");
++        allowFiledsMap.put("like","");
++        allowFiledsMap.put("order","");
++        int totalCount = cfUserService.selectListByConditionCounts(conditionsMap, allowFiledsMap, allowFileds);
++        String fileName = "用户列表";
++        fileName = new String(fileName.getBytes("UTF-8"), "ISO8859-1");
++        response.setContentType("application/octet-stream;charset=UTF-8");
++        response.setHeader("Content-Disposition", "attachment;filename=" + fileName + ".xlsx");
++        response.addHeader("Pargam", "no-cache");
++        response.addHeader("Cache-Control", "no-cache");
++        int pageSize = 5000;
++        int totalPages = (totalCount + pageSize - 1) / pageSize;
++        SXSSFWorkbook wb = new SXSSFWorkbook(100);
++        Sheet sheet1 = wb.createSheet("sheet1");
++        Row titleRow = sheet1.createRow(0);
++        String[] headers = {"序号", "用户ID", "用户名", "昵称", "真实姓名", "手机号", "性别", "用户类型", "注册时间"};
++        for (int i = 0; i < headers.length; i++) {
++            titleRow.createCell(i).setCellValue(headers[i]);
++        }
++        int excelRow = 1;
++        int sequence = 1;
++        for (int page = 1; page <= totalPages; page++) {
++            List<CfUser> pageData = cfUserService.selectListByConditionPage(
++                    conditionsMap, allowFiledsMap, allowFileds, page, pageSize);
++            if (pageData != null) {
++                for (CfUser cfUser : pageData) {
++                    Row dataRow = sheet1.createRow(excelRow++);
++                    dataRow.createCell(0).setCellValue(sequence++);
++                    dataRow.createCell(1).setCellValue(cfUser.getId());
++                    dataRow.createCell(2).setCellValue(cfUser.getUserName());
++                    dataRow.createCell(3).setCellValue(cfUser.getNickName());
++                    dataRow.createCell(4).setCellValue(cfUser.getTrueName());
++                    dataRow.createCell(5).setCellValue(cfUser.getPhone());
++                    dataRow.createCell(6).setCellValue(cfUser.getSex() == null ? "" : cfUser.getSex() == 1 ? "男" : cfUser.getSex() == 2 ? "女" : "保密");
++                    dataRow.createCell(7).setCellValue(cfUser.getType() == null ? "" : cfUser.getType() == 1 ? "管理员" : "普通用户");
++                    dataRow.createCell(8).setCellValue(cfUser.getCreateTime() != null ? DateUtil.stampToDate(cfUser.getCreateTime(), "yyyy-MM-dd HH:mm:ss") : "");
++                }
++            }
++        }
++        OutputStream os = response.getOutputStream();
++        wb.write(os);
++        os.close();
++        wb.dispose();
++    }
++
+     @PreAuthorize("hasAuthority('ucenter-UcenterController-update')")
+     @Override
+     @RequestMapping(value = "update", method = RequestMethod.PUT)
+diff --git a/cf-framework-parent/cf-ucenter/cf-ucenter-admin/src/main/java/com/cf/ucenter/admin/swagger/UcenterSwagger.java b/cf-framework-parent/cf-ucenter/cf-ucenter-admin/src/main/java/com/cf/ucenter/admin/swagger/UcenterSwagger.java
+index 8bd9e66..66807a6 100644
+--- a/cf-framework-parent/cf-ucenter/cf-ucenter-admin/src/main/java/com/cf/ucenter/admin/swagger/UcenterSwagger.java
++++ b/cf-framework-parent/cf-ucenter/cf-ucenter-admin/src/main/java/com/cf/ucenter/admin/swagger/UcenterSwagger.java
+@@ -10,6 +10,7 @@ import io.swagger.annotations.ApiImplicitParams;
+ import io.swagger.annotations.ApiOperation;
+ import org.springframework.web.bind.annotation.RequestBody;
+ 
++import javax.servlet.http.HttpServletResponse;
+ import javax.validation.constraints.*;
+ 
+ /**
+@@ -72,6 +73,15 @@ public interface UcenterSwagger {
+     })
+     public ResponseResult selectListByCondition(String conditions);
+ 
++    @ApiOperation(value = "导出用户数据为Excel")
++    @ApiImplicitParams({
++            @ApiImplicitParam(name="authorization",value = "jwt串(请加\"Bearer \"前缀，注意有空格)",required=true,paramType="header",dataType="string"),
++            @ApiImplicitParam(name="conditions",
++                    value = "条件,例子{\"id\":{\"operator\":\"=\",\"value\":200},\"user_name\":{\"operator\":\"=\",\"value\":\"admin\"},\"like\":{\"operator\":\"like\",\"list\":{\"nick_name\":{\"0\":{\"value\":\"张三\",\"alias\":\"u\"}}}}},分页流式导出避免内存溢出",
++                    required=true,paramType="query",dataType="string")
++    })
++    public void exportUserExcel(HttpServletResponse response, String conditions) throws Exception;
++
+     @ApiOperation(value = "更新用户信息")
+     @ApiImplicitParams({
+             @ApiImplicitParam(name="authorization",value = "jwt串(请加\"Bearer \"前缀，注意有空格)",required=true,paramType="header",dataType="string")
+diff --git a/cf-framework-parent/cf-ucenter/cf-ucenter-interface/src/main/java/com/cf/ucenter/service/CfUserService.java b/cf-framework-parent/cf-ucenter/cf-ucenter-interface/src/main/java/com/cf/ucenter/service/CfUserService.java
+index d64371e..ba33856 100644
+--- a/cf-framework-parent/cf-ucenter/cf-ucenter-interface/src/main/java/com/cf/ucenter/service/CfUserService.java
++++ b/cf-framework-parent/cf-ucenter/cf-ucenter-interface/src/main/java/com/cf/ucenter/service/CfUserService.java
+@@ -253,6 +253,17 @@ public interface CfUserService {
+ 
+     public Integer getCountByQuery(CfUserQuery cfUserQuery);
+ 
++    /**
++     * 根据条件分页查询用户数据列表（不含角色信息，专用于大数据量导出）
++     * @param conditions 查询条件
++     * @param allowFiledsMap 允许字段映射
++     * @param allowFileds 允许字段列表
++     * @param page 页码（从1开始）
++     * @param pageSize 每页记录数
++     * @return 用户列表
++     */
++    List<CfUser> selectListByConditionPage(Map<String, Map<String, Object>> conditions, Map<String, String> allowFiledsMap, List<String> allowFileds, int page, int pageSize);
++
+     /**
+      * 检查用户的身份证和驾驶证是否已经上传并审核通过，如果正常会返回驾驶证和身份证数据
+      * @param uid
+diff --git a/cf-framework-parent/cf-ucenter/cf-ucenter-service/src/main/java/com/cf/ucenter/service/impl/CfUserServiceImpl.java b/cf-framework-parent/cf-ucenter/cf-ucenter-service/src/main/java/com/cf/ucenter/service/impl/CfUserServiceImpl.java
+index c5d94e7..43ea955 100644
+--- a/cf-framework-parent/cf-ucenter/cf-ucenter-service/src/main/java/com/cf/ucenter/service/impl/CfUserServiceImpl.java
++++ b/cf-framework-parent/cf-ucenter/cf-ucenter-service/src/main/java/com/cf/ucenter/service/impl/CfUserServiceImpl.java
+@@ -203,6 +203,16 @@ public class CfUserServiceImpl implements CfUserService {
+         return cfUserMapper.selectListByConditionCounts(sql);
+     }
+ 
++    @Override
++    public List<CfUser> selectListByConditionPage(Map<String, Map<String, Object>> conditions, Map<String, String> allowFiledsMap, List<String> allowFileds, int page, int pageSize) {
++        String sql = "SELECT u.id,u.user_name,u.avatar,u.type,u.nick_name,u.true_name,u.phone,u.email,u.birthday,u.sex,u.sign,u.create_time FROM cf_user u";
++        List<String> pageAllowFileds = new ArrayList<>(allowFileds);
++        pageAllowFileds.remove("limit");
++        sql = DbUtils.makeQuery(conditions, allowFiledsMap, pageAllowFileds, sql, false);
++        sql += " LIMIT " + ((page - 1) * pageSize) + "," + pageSize;
++        return cfUserMapper.selectListByCondition(sql);
++    }
++
+     @Override
+     public CfUser update(CfUser cfUser) {
+         if(StringUtils.isEmpty(cfUser.getPassword())){

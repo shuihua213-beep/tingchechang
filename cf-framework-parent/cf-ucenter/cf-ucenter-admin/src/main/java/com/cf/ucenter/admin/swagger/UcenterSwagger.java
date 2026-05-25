@@ -10,6 +10,7 @@ import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.*;
 
 /**
@@ -71,6 +72,15 @@ public interface UcenterSwagger {
                     required=true,paramType="query",dataType="string")
     })
     public ResponseResult selectListByCondition(String conditions);
+
+    @ApiOperation(value = "导出用户数据为Excel")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name="authorization",value = "jwt串(请加\"Bearer \"前缀，注意有空格)",required=true,paramType="header",dataType="string"),
+            @ApiImplicitParam(name="conditions",
+                    value = "条件,例子{\"id\":{\"operator\":\"=\",\"value\":200},\"user_name\":{\"operator\":\"=\",\"value\":\"admin\"},\"like\":{\"operator\":\"like\",\"list\":{\"nick_name\":{\"0\":{\"value\":\"张三\",\"alias\":\"u\"}}}}},分页流式导出避免内存溢出",
+                    required=true,paramType="query",dataType="string")
+    })
+    public void exportUserExcel(HttpServletResponse response, String conditions) throws Exception;
 
     @ApiOperation(value = "更新用户信息")
     @ApiImplicitParams({

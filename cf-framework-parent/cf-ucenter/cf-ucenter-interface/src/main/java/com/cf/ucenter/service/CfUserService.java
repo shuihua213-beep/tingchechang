@@ -254,6 +254,17 @@ public interface CfUserService {
     public Integer getCountByQuery(CfUserQuery cfUserQuery);
 
     /**
+     * 根据条件分页查询用户数据列表（不含角色信息，专用于大数据量导出）
+     * @param conditions 查询条件
+     * @param allowFiledsMap 允许字段映射
+     * @param allowFileds 允许字段列表
+     * @param page 页码（从1开始）
+     * @param pageSize 每页记录数
+     * @return 用户列表
+     */
+    List<CfUser> selectListByConditionPage(Map<String, Map<String, Object>> conditions, Map<String, String> allowFiledsMap, List<String> allowFileds, int page, int pageSize);
+
+    /**
      * 检查用户的身份证和驾驶证是否已经上传并审核通过，如果正常会返回驾驶证和身份证数据
      * @param uid
      */
