@@ -7,14 +7,9 @@ spring:
     name: cf-hk
 hk:
   forward:
-    baseUrl: http://192.168.3.19
-    localIP: 192.168.3.252
-#    deviceIP: 192.168.10.61,192.168.10.62,192.168.10.63,192.168.10.64
-    deviceIP: 192.168.3.249
-    port: 8000
-    username: admin
-    password: abcde12345
-
-
-
-
+    baseUrl: ${HK_BASE_URL:http://192.168.3.19}
+    localIP: ${HK_LOCAL_IP:192.168.3.252}
+    deviceIP: ${HK_DEVICE_IP:192.168.3.249}
+    port: ${HK_PORT:8000}
+    username: ${HK_USERNAME:admin}
+    password: ${HK_PASSWORD:abcde12345}

@@ -10,36 +10,13 @@ dh:
     coding: GBK
     ledBrand: yang_bang
     cameraInfoes:
-      - ip: 192.168.3.200
-        server: http://192.168.3.19:8089
-        port: 37777
-        username: admin
-        password: admin123
-        uuid: 6F01FFAPAJ65519
-#      - ip: 10.66.52.101
-#        server: https://parking-api.ebatech.cn
-#        port: 37777
-#        username: admin
-#        password: admin123
-#        uuid: 7C0AEEDPAJ2A1A2
-#      - ip: 10.66.52.102
-#        server: https://parking-api.ebatech.cn
-#        port: 37777
-#        username: admin
-#        password: admin123
-#        uuid: 7C0AEEDPAJ9B4D5
-#      - ip: 10.66.52.103
-#        server: https://parking-api.ebatech.cn
-#        port: 37777
-#        username: admin
-#        password: admin123
-#        uuid: 7C0AEEDPAJCE7F8
+      - ip: ${DH_CAMERA_IP:192.168.3.200}
+        server: ${DH_CAMERA_SERVER:http://192.168.3.19:8089}
+        port: ${DH_CAMERA_PORT:37777}
+        username: ${DH_CAMERA_USERNAME:admin}
+        password: ${DH_CAMERA_PASSWORD:admin123}
+        uuid: ${DH_CAMERA_UUID:6F01FFAPAJ65519}
     ledConfigs:
-      - ip: 192.168.3.250
-        port: 5005
-        uuid: 6F01FFAPAJ65519
-
-
-
-
-
+      - ip: ${DH_LED_IP:192.168.3.250}
+        port: ${DH_LED_PORT:5005}
+        uuid: ${DH_LED_UUID:6F01FFAPAJ65519}

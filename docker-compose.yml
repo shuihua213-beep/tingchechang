@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  zookeeper:
+    image: zookeeper:3.8
+    container_name: cf-zookeeper
+    ports:
+      - "${ZK_PORT:-2181}:2181"
+    environment:
+      ZOO_MY_ID: 1
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:5.7
+    container_name: cf-mysql
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD:-caifeng}
+      MYSQL_DATABASE: ${MYSQL_DB:-caifeng}
+      MYSQL_USER: ${MYSQL_USER:-caifeng}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-caifeng}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    restart: unless-stopped
+
+  redis:
+    image: redis:6
+    container_name: cf-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:-}
+      --save 60 1
+      --appendonly yes
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:4.4
+    container_name: cf-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: caifeng
+      MONGO_INITDB_ROOT_PASSWORD: caifeng
+      MONGO_INITDB_DATABASE: caifeng
+    volumes:
+      - mongo-data:/data/db
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    container_name: cf-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-minioadmin}
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+
+volumes:
+  mysql-data:
+  redis-data:
+  mongo-data:
+  minio-data:

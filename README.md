@@ -84,4 +84,60 @@
 
 4．商城与营销功能 此功能主要考虑到使用者有运营周边的兴趣和能力，在商城和广告营销上进行盈利
 
-安装教程 安装JDK1.8+ 安装MySQL5.6+ 安装MongoDB 安装Redis 安装FastDFS 安装Zookeeper 将打包好的代码上传到服务器上，直接运行jar包即可 详细安装教程文档地址 使用说明(swagger2文档) 国内领先水平 专业演示 旧版本(V2.0)演示地址已经停止, 最新版本是(V3.0),V3.0上面已经给APP和演示地址了 如果您发现有代码有什么不足之处请跟我留言，如果我留言不及时请加我个人微信Dove981011512(学生搞啥论文的以及个人小白不要加我，暂时没时间和精力帮忙，还望您见谅和理解)
+安装教程 安装JDK1.8+ 安装MySQL5.6+ 安装MongoDB 安装Redis 安装FastDFS 安装Zookeeper 将打包好的代码上传到服务器上，直接运行jar包即可 详细安装教程文档地址
+
+## 统一环境变量配置 (v3.0+)
+
+所有服务模块已统一环境变量命名规范，支持 Docker 部署与本地开发一键切换。
+
+### 快速启动 (Docker Compose)
+
+```bash
+# 1. 编辑 .env 文件，修改数据库/中间件地址密码
+vim .env
+
+# 2. 启动中间件 (MySQL/Redis/MongoDB/Zookeeper/MinIO)
+docker-compose up -d
+
+# 3. 使用 Maven 打包
+mvn clean package -DskipTests
+
+# 4. 启动各微服务 (Spring Boot 会自动读取环境变量)
+# 本地开发无需设置任何环境变量，默认值即可运行
+java -jar xxx-service.jar
+
+# Docker 环境下通过 --env-file 传入
+java -jar xxx-service.jar --spring.config.additional-location=file:./.env
+```
+
+### 环境变量命名规范
+
+| 变量 | 说明 | 默认值 |
+|---|---|---|
+| `ZK_HOST` / `ZK_PORT` | Zookeeper 注册中心 | 127.0.0.1:2181 |
+| `MYSQL_HOST` / `MYSQL_PORT` / `MYSQL_DB` / `MYSQL_USER` / `MYSQL_PASSWORD` | MySQL 数据库 | 127.0.0.1:3306 / caifeng |
+| `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD` / `REDIS_DATABASE` | Redis 缓存 | 127.0.0.1:6379 |
+| `MONGODB_URI` / `MONGODB_DATABASE` | MongoDB 文档数据库 | mongodb://caifeng:caifeng@127.0.0.1:27017/caifeng |
+| `FASTDFS_TRACKER_SERVERS` | FastDFS 文件存储 | 127.0.0.1:22122 |
+| `AUTH_CLIENT_ID` / `AUTH_CLIENT_SECRET` | OAuth2 认证 | oauth2_client_id / oauth2_client_secret |
+| `ENCRYPT_KEYSTORE_*` | 加密密钥库 | classpath:/xc.keystore |
+| `AUTHORITY_API_URL` | Authority API 地址 | http://127.0.0.1:16007 |
+| `HK_*` | 海康设备配置 | 192.168.3.x |
+| `DH_*` | 大华设备配置 | 192.168.3.x |
+
+### 生产环境部署
+
+```bash
+# 方式一：交互式生成 .env
+./replace.sh
+
+# 方式二：使用当前环境变量生成 .env
+export MYSQL_HOST=prod-db-host
+export MYSQL_PASSWORD=secure_password
+./replace.sh env
+
+# 方式三：命令行参数
+./replace.sh gen ZK_IP DB_IP DB_USER DB_PWD REDIS_IP REDIS_PWD MONGO_IP MONGO_USER MONGO_PWD FASTDFS_IP
+```
+
+使用说明(swagger2文档) 国内领先水平 专业演示 旧版本(V2.0)演示地址已经停止, 最新版本是(V3.0),V3.0上面已经给APP和演示地址了 如果您发现有代码有什么不足之处请跟我留言，如果我留言不及时请加我个人微信Dove981011512(学生搞啥论文的以及个人小白不要加我，暂时没时间和精力帮忙，还望您见谅和理解)
