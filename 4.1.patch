@@ -1,0 +1,112 @@
+diff --git a/cf-framework-parent/cf-framework-common/pom.xml b/cf-framework-parent/cf-framework-common/pom.xml
+index 02fc85e..bda1d4d 100644
+--- a/cf-framework-parent/cf-framework-common/pom.xml
++++ b/cf-framework-parent/cf-framework-common/pom.xml
+@@ -27,7 +27,6 @@
+             <plugin>
+                 <groupId>org.springframework.boot</groupId>
+                 <artifactId>spring-boot-maven-plugin</artifactId>
+-                <version>2.1.1.RELEASE</version>
+             </plugin>
+         </plugins>
+     </build>
+diff --git a/cf-framework-parent/cf-framework-utils/pom.xml b/cf-framework-parent/cf-framework-utils/pom.xml
+index acbeeac..a617227 100644
+--- a/cf-framework-parent/cf-framework-utils/pom.xml
++++ b/cf-framework-parent/cf-framework-utils/pom.xml
+@@ -113,7 +113,6 @@
+             <plugin>
+                 <groupId>org.springframework.boot</groupId>
+                 <artifactId>spring-boot-maven-plugin</artifactId>
+-                <version>2.1.1.RELEASE</version>
+             </plugin>
+         </plugins>
+     </build>
+diff --git a/cf-framework-parent/cf-internet-of-things/cf-car-park/cf-car-park-api/pom.xml b/cf-framework-parent/cf-internet-of-things/cf-car-park/cf-car-park-api/pom.xml
+index 87060d8..05c9279 100644
+--- a/cf-framework-parent/cf-internet-of-things/cf-car-park/cf-car-park-api/pom.xml
++++ b/cf-framework-parent/cf-internet-of-things/cf-car-park/cf-car-park-api/pom.xml
+@@ -100,7 +100,6 @@
+             <plugin>
+                 <groupId>org.springframework.boot</groupId>
+                 <artifactId>spring-boot-maven-plugin</artifactId>
+-                <version>2.1.1.RELEASE</version>
+                 <executions>
+                     <execution>
+                         <goals>
+diff --git a/cf-framework-parent/cf-pay/cf-pay-api/pom.xml b/cf-framework-parent/cf-pay/cf-pay-api/pom.xml
+index 73d1db6..74a3b3c 100644
+--- a/cf-framework-parent/cf-pay/cf-pay-api/pom.xml
++++ b/cf-framework-parent/cf-pay/cf-pay-api/pom.xml
+@@ -82,7 +82,6 @@
+             <plugin>
+                 <groupId>org.springframework.boot</groupId>
+                 <artifactId>spring-boot-maven-plugin</artifactId>
+-                <version>2.1.1.RELEASE</version>
+                 <executions>
+                     <execution>
+                         <goals>
+diff --git a/cf-framework-parent/cf-sms/cf-sms-service/pom.xml b/cf-framework-parent/cf-sms/cf-sms-service/pom.xml
+index fad992d..6204c0a 100644
+--- a/cf-framework-parent/cf-sms/cf-sms-service/pom.xml
++++ b/cf-framework-parent/cf-sms/cf-sms-service/pom.xml
+@@ -42,7 +42,6 @@
+         <dependency>
+             <groupId>org.apache.dubbo</groupId>
+             <artifactId>dubbo-spring-boot-starter</artifactId>
+-            <version>2.7.3</version>
+         </dependency>
+ 
+         <dependency>
+diff --git a/cf-framework-parent/cf-ucenter/cf-ucenter-api/pom.xml b/cf-framework-parent/cf-ucenter/cf-ucenter-api/pom.xml
+index dbc7ca3..612bf0e 100644
+--- a/cf-framework-parent/cf-ucenter/cf-ucenter-api/pom.xml
++++ b/cf-framework-parent/cf-ucenter/cf-ucenter-api/pom.xml
+@@ -111,7 +111,6 @@
+             <plugin>
+                 <groupId>org.springframework.boot</groupId>
+                 <artifactId>spring-boot-maven-plugin</artifactId>
+-                <version>2.1.1.RELEASE</version>
+                 <executions>
+                     <execution>
+                         <goals>
+diff --git a/cf-framework-parent/cf-ucenter/cf-ucenter-service/pom.xml b/cf-framework-parent/cf-ucenter/cf-ucenter-service/pom.xml
+index 6e03dce..45929c7 100644
+--- a/cf-framework-parent/cf-ucenter/cf-ucenter-service/pom.xml
++++ b/cf-framework-parent/cf-ucenter/cf-ucenter-service/pom.xml
+@@ -60,7 +60,6 @@
+         <dependency>
+             <groupId>org.apache.dubbo</groupId>
+             <artifactId>dubbo-spring-boot-starter</artifactId>
+-            <version>2.7.3</version>
+         </dependency>
+ 
+         <dependency>
+diff --git a/cf-framework-parent/pom.xml b/cf-framework-parent/pom.xml
+index 1844ede..a14d3d8 100644
+--- a/cf-framework-parent/pom.xml
++++ b/cf-framework-parent/pom.xml
+@@ -290,6 +290,15 @@
+     </dependencyManagement>
+     <build>
+         <finalName>${project.artifactId}</finalName>
++        <pluginManagement>
++            <plugins>
++                <plugin>
++                    <groupId>org.springframework.boot</groupId>
++                    <artifactId>spring-boot-maven-plugin</artifactId>
++                    <version>${spring-boot.version}</version>
++                </plugin>
++            </plugins>
++        </pluginManagement>
+         <plugins>
+             <!-- &lt;!&ndash; 资源文件拷贝插件 &ndash;&gt;
+              <plugin>
+@@ -312,7 +321,6 @@
+             <plugin>
+                 <groupId>org.springframework.boot</groupId>
+                 <artifactId>spring-boot-maven-plugin</artifactId>
+-                <version>2.1.1.RELEASE</version>
+             </plugin>
+         </plugins>
+     </build>
