@@ -328,9 +328,9 @@ public class CfCarParkChargingRulesServiceImpl implements CfCarParkChargingRules
         }
 
         List<CfCarParkChargingRules> carParkChargingRules = null;  //停车收费规则(递归降栈内存之用)
-        Integer counts = 0; //已经第N次计算费用
-        double currentPrice = 0; //当前价格(针对某个时间段按次数算的情况时使用)
-        String currentCalculateingCarType = "temporary_car"; //当前计费车辆类型
+    Integer counts = 0; //已经第N次计算费用
+    BigDecimal currentPrice = BigDecimal.ZERO; //当前价格(针对某个时间段按次数算的情况时使用)
+    String currentCalculateingCarType = "temporary_car"; //当前计费车辆类型
 
         //如果为固定费用的停车记录，时间不用实时时间
         if(cfCarParkUseLog.getCountFeeStatus()==(byte)0 && (cfCarParkUseLog.getOutTime()==null || cfCarParkUseLog.getOutTime()==0)){
@@ -483,7 +483,7 @@ public class CfCarParkChargingRulesServiceImpl implements CfCarParkChargingRules
             currentCalculateingCarType = cfCarParkUseLog.getCfCarParkCarLimit().getCarTypeKey();
         }
 
-        Double totalFee = 0d;
+        BigDecimal totalFee = BigDecimal.ZERO;
         long outTime = cfCarParkUseLog.getOutTime()==0 || cfCarParkUseLog.getOutTime()==null?System.currentTimeMillis():cfCarParkUseLog.getOutTime();
 
         //使用停车场面板设置
@@ -563,18 +563,18 @@ public class CfCarParkChargingRulesServiceImpl implements CfCarParkChargingRules
                 if(carParkChargingRules==null || carParkChargingRules.size()==0){
                     ExceptionCast.cast(CarParkCode.CHARGING_RULES_NOT_FOUND);
                 }
-                totalFee = fixedCalculateTheAmounPayable(cfCarParkUseLog.getInTime()+giveTime, outTime, cfCarPark, carParkChargingRules.get(0).getFee().doubleValue(), currentCalculateingCarType, calculateingCfCarPark, counts, upperLimitTime);
+                totalFee = fixedCalculateTheAmounPayable(cfCarParkUseLog.getInTime()+giveTime, outTime, cfCarPark, carParkChargingRules.get(0).getFee(), currentCalculateingCarType, calculateingCfCarPark, counts, upperLimitTime);
             }else if(billingModel.equals("dynamic")){
-                totalFee = dynamicCalculateTheAmounPayable(cfCarParkUseLog.getInTime()+giveTime, outTime, 0d, currentCalculateingCarType, calculateingCfCarPark, counts, carParkChargingRules, upperLimitTime, 0d, cfCarParkUseLog.getInTime()+giveTime);
+                totalFee = dynamicCalculateTheAmounPayable(cfCarParkUseLog.getInTime()+giveTime, outTime, BigDecimal.ZERO, currentCalculateingCarType, calculateingCfCarPark, counts, carParkChargingRules, upperLimitTime, BigDecimal.ZERO, cfCarParkUseLog.getInTime()+giveTime);
             }else if(billingModel.equals("24_dynamic")){
-                currentPrice = 0d;
+                currentPrice = BigDecimal.ZERO;
                 totalFee = dynamic24HoursCalculateTheAmounPayable(outTime-cfCarParkUseLog.getInTime()-giveTime, 0l, currentCalculateingCarType, calculateingCfCarPark, counts, carParkChargingRules, currentPrice);
             }else if(billingModel.equals("24_static")){
                 carParkChargingRules = getListByCondition(cfCarParkChargingRulesQuery);
                 if(carParkChargingRules==null || carParkChargingRules.size()==0){
                     ExceptionCast.cast(CarParkCode.CHARGING_RULES_NOT_FOUND);
                 }
-                totalFee = fixed24HoursCalculateTheAmounPayable(cfCarParkUseLog.getInTime()+giveTime, outTime, cfCarPark, carParkChargingRules.get(0).getFee().doubleValue(), currentCalculateingCarType, calculateingCfCarPark, counts);
+                totalFee = fixed24HoursCalculateTheAmounPayable(cfCarParkUseLog.getInTime()+giveTime, outTime, cfCarPark, carParkChargingRules.get(0).getFee(), currentCalculateingCarType, calculateingCfCarPark, counts);
             }else if(billingModel.equals("only_one")){
                 //每天只收一次费
                 carParkChargingRules = getListByCondition(cfCarParkChargingRulesQuery);
@@ -597,16 +597,16 @@ public class CfCarParkChargingRulesServiceImpl implements CfCarParkChargingRules
                 if(orderList!=null && orderList.size()>0){
                     //判断上次支付的时间跟本次入场时间是否在同一天，如果在同一天，本次停车时间由入场时间当天晚上12点后开始算起
                     if(DateUtil.maxMillisecondBaseOnTheDayToTimestamp(cfCarParkUseLog.getInTime()).longValue()==DateUtil.maxMillisecondBaseOnTheDayToTimestamp(orderList.get(0).getPayTime()).longValue()){
-                        totalFee = dynamicCalculateTheAmounPayable(DateUtil.maxMillisecondBaseOnTheDayToTimestamp(cfCarParkUseLog.getInTime())+1001l+giveTime, outTime, 0d, currentCalculateingCarType, calculateingCfCarPark, counts, carParkChargingRules, upperLimitTime, 0d, DateUtil.maxMillisecondBaseOnTheDayToTimestamp(cfCarParkUseLog.getInTime())+1001l+giveTime);
+                        totalFee = dynamicCalculateTheAmounPayable(DateUtil.maxMillisecondBaseOnTheDayToTimestamp(cfCarParkUseLog.getInTime())+1001l+giveTime, outTime, BigDecimal.ZERO, currentCalculateingCarType, calculateingCfCarPark, counts, carParkChargingRules, upperLimitTime, BigDecimal.ZERO, DateUtil.maxMillisecondBaseOnTheDayToTimestamp(cfCarParkUseLog.getInTime())+1001l+giveTime);
                     }else{
                         BigDecimal countFee = new BigDecimal("0.00");
                         for (CfOrder order: orderList){
-                            countFee.add(order.getAmountActuallyPaid());
+                            countFee = countFee.add(order.getAmountActuallyPaid());
                         }
-                        totalFee = dynamicCalculateTheAmounPayable(cfCarParkUseLog.getInTime()+giveTime, outTime, 0d, currentCalculateingCarType, calculateingCfCarPark, counts, carParkChargingRules, upperLimitTime, countFee.doubleValue(), cfCarParkUseLog.getInTime()+giveTime);
+                        totalFee = dynamicCalculateTheAmounPayable(cfCarParkUseLog.getInTime()+giveTime, outTime, BigDecimal.ZERO, currentCalculateingCarType, calculateingCfCarPark, counts, carParkChargingRules, upperLimitTime, countFee, cfCarParkUseLog.getInTime()+giveTime);
                     }
                 }else{
-                    totalFee = dynamicCalculateTheAmounPayable(cfCarParkUseLog.getInTime()+giveTime, outTime, 0d, currentCalculateingCarType, calculateingCfCarPark, counts, carParkChargingRules, upperLimitTime, 0d, cfCarParkUseLog.getInTime()+giveTime);
+                    totalFee = dynamicCalculateTheAmounPayable(cfCarParkUseLog.getInTime()+giveTime, outTime, BigDecimal.ZERO, currentCalculateingCarType, calculateingCfCarPark, counts, carParkChargingRules, upperLimitTime, BigDecimal.ZERO, cfCarParkUseLog.getInTime()+giveTime);
                 }
             }else if(billingModel.equals("24_only_one")){
                 cfCarParkChargingRulesQuery.setSize(null);
@@ -643,7 +643,7 @@ public class CfCarParkChargingRulesServiceImpl implements CfCarParkChargingRules
                     if(newEstStartTime<cfCarParkUseLog.getInTime()){
                         newEstStartTime = cfCarParkUseLog.getInTime();
                     }
-                    if(cfCarPark.getFeeUpperLimit().doubleValue()>0 && orderList.get(orderList.size()-1).getAmountsPayable().doubleValue()<cfCarPark.getFeeUpperLimit().doubleValue() && newEstStartTime>cfCarParkUseLog.getInTime()){
+                    if(cfCarPark.getFeeUpperLimit().compareTo(BigDecimal.ZERO) > 0 && orderList.get(orderList.size()-1).getAmountsPayable().compareTo(cfCarPark.getFeeUpperLimit()) < 0 && newEstStartTime>cfCarParkUseLog.getInTime()){
                         //本次24小时内，并且收费未达到费用上限
                         newEstStartTime = cfCarParkUseLog.getInTime();
                         countPayTime = cfCarParkUseLog.getOutTime()-86400000l;
@@ -659,21 +659,21 @@ public class CfCarParkChargingRulesServiceImpl implements CfCarParkChargingRules
                             }
                         }
 
-                        if(cfCarPark.getFeeUpperLimit().doubleValue()>0 && totalPaid.doubleValue()<cfCarPark.getFeeUpperLimit().doubleValue()){
-                            totalFee = dynamic24HoursCalculateTheAmounPayable(outTime-newEstStartTime-giveTime, 0l, currentCalculateingCarType, calculateingCfCarPark, 0, carParkChargingRules, 0d);
-                            if(totalPaid.doubleValue()>0 && totalPaid.doubleValue()+totalFee>cfCarPark.getFeeUpperLimit().doubleValue()){
-                                totalFee = cfCarPark.getFeeUpperLimit().doubleValue() - totalPaid.doubleValue();
+                        if(cfCarPark.getFeeUpperLimit().compareTo(BigDecimal.ZERO) > 0 && totalPaid.compareTo(cfCarPark.getFeeUpperLimit()) < 0){
+                            totalFee = dynamic24HoursCalculateTheAmounPayable(outTime-newEstStartTime-giveTime, 0l, currentCalculateingCarType, calculateingCfCarPark, 0, carParkChargingRules, BigDecimal.ZERO);
+                            if(totalPaid.compareTo(BigDecimal.ZERO) > 0 && totalPaid.add(totalFee).compareTo(cfCarPark.getFeeUpperLimit()) > 0){
+                                totalFee = cfCarPark.getFeeUpperLimit().subtract(totalPaid);
                             }
                         }else{
-                            totalFee = 0d;
+                            totalFee = BigDecimal.ZERO;
                         }
                     }else{
                         //还处在上次免费期内
-                        totalFee = 0d;
+                        totalFee = BigDecimal.ZERO;
                     }
 
                 }else{
-                    currentPrice = 0d;
+                    currentPrice = BigDecimal.ZERO;
                     totalFee = dynamic24HoursCalculateTheAmounPayable(outTime-cfCarParkUseLog.getInTime()-giveTime, 0l, currentCalculateingCarType, calculateingCfCarPark, 0, carParkChargingRules, currentPrice);
                 }
             }
@@ -685,14 +685,14 @@ public class CfCarParkChargingRulesServiceImpl implements CfCarParkChargingRules
             }
         }
 
-        if(totalFee==0 && cfOrder.getStatus()==PayStatus.TO_BE_PAID && cfOrder.getCollectionAmount().doubleValue()==0){
+        if(totalFee.compareTo(BigDecimal.ZERO) == 0 && cfOrder.getStatus()==PayStatus.TO_BE_PAID && cfOrder.getCollectionAmount().compareTo(BigDecimal.ZERO) == 0){
             cfCarParkUseLog.setPayTime(System.currentTimeMillis());
             cfOrder.setPaymentAgencyShortName("system_free_time");
             cfOrder.setPayTime(cfCarParkUseLog.getPayTime());
         }
 
         if(cfOrder.getStatus()==PayStatus.TO_BE_PAID) {
-            cfOrder.setAmountsPayable((new BigDecimal(totalFee.toString())).setScale(2, RoundingMode.DOWN));
+            cfOrder.setAmountsPayable(totalFee.setScale(2, RoundingMode.DOWN));
         }
 
         cfCarParkOrder.setCfCarParkPackage(cfCarParkPackage);
@@ -771,29 +771,29 @@ public class CfCarParkChargingRulesServiceImpl implements CfCarParkChargingRules
     }
 
     @Override
-    public Double fixedCalculateTheAmounPayable(Long startTime, Long endTime, CfCarPark cfCarPark, Double unitPrice, String currentCalculateingCarType, CfCarPark calculateingCfCarPark, Integer counts, Long upperLimitTime) throws Exception
+    public BigDecimal fixedCalculateTheAmounPayable(Long startTime, Long endTime, CfCarPark cfCarPark, BigDecimal unitPrice, String currentCalculateingCarType, CfCarPark calculateingCfCarPark, Integer counts, Long upperLimitTime) throws Exception
     {
         //根据自己实际情况计费规则返回
-        return 0D;
+        return BigDecimal.ZERO;
     }
 
     @Override
-    public Double fixed24HoursCalculateTheAmounPayable(Long startTime, Long endTime, CfCarPark cfCarPark, Double unitPrice, String currentCalculateingCarType, CfCarPark calculateingCfCarPark, Integer counts) throws Exception {
+    public BigDecimal fixed24HoursCalculateTheAmounPayable(Long startTime, Long endTime, CfCarPark cfCarPark, BigDecimal unitPrice, String currentCalculateingCarType, CfCarPark calculateingCfCarPark, Integer counts) throws Exception {
         //根据自己实际情况计费规则返回
-        return 0D;
+        return BigDecimal.ZERO;
     }
 
     @Override
-    public Double dynamicCalculateTheAmounPayable(Long startTime, Long endTime, Double totalFee, String carType, CfCarPark calculateingCfCarPark, Integer counts,
-                                                  List<CfCarParkChargingRules> carParkChargingRules, Long upperLimitTime, Double countFee, Long originalStartTime) throws Exception {
+    public BigDecimal dynamicCalculateTheAmounPayable(Long startTime, Long endTime, BigDecimal totalFee, String carType, CfCarPark calculateingCfCarPark, Integer counts,
+                                                  List<CfCarParkChargingRules> carParkChargingRules, Long upperLimitTime, BigDecimal countFee, Long originalStartTime) throws Exception {
         //根据自己实际情况计费规则返回
-        return 0D;
+        return BigDecimal.ZERO;
     }
 
     @Override
-    public Double dynamic24HoursCalculateTheAmounPayable(Long totalTime, Long startCountTime, String carType, CfCarPark calculateingCfCarPark, Integer counts, List<CfCarParkChargingRules> carParkChargingRules, double currentPrice) throws Exception {
+    public BigDecimal dynamic24HoursCalculateTheAmounPayable(Long totalTime, Long startCountTime, String carType, CfCarPark calculateingCfCarPark, Integer counts, List<CfCarParkChargingRules> carParkChargingRules, BigDecimal currentPrice) throws Exception {
         //根据自己实际情况计费规则返回
-        return 0D;
+        return BigDecimal.ZERO;
     }
 
     @Override

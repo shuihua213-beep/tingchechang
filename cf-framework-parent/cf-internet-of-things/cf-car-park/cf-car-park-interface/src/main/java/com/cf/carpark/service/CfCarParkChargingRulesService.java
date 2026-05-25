@@ -11,6 +11,7 @@ import com.cf.pay.domain.CfUserPaymentAgency;
 import com.cf.pay.domain.request.CCBScannedChargebackForm;
 import com.cf.pay.domain.response.ResultMap;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -94,7 +95,7 @@ public interface CfCarParkChargingRulesService {
      * @return
      * @throws Exception
      */
-    public Double fixedCalculateTheAmounPayable(Long startTime, Long endTime, CfCarPark cfCarPark, Double unitPrice, String currentCalculateingCarType, CfCarPark calculateingCfCarPark, Integer counts, Long upperLimitTime) throws Exception;
+    public BigDecimal fixedCalculateTheAmounPayable(Long startTime, Long endTime, CfCarPark cfCarPark, BigDecimal unitPrice, String currentCalculateingCarType, CfCarPark calculateingCfCarPark, Integer counts, Long upperLimitTime) throws Exception;
 
     /**
      * 24小时固定模式计算停车费
@@ -108,7 +109,7 @@ public interface CfCarParkChargingRulesService {
      * @return
      * @throws Exception
      */
-    Double fixed24HoursCalculateTheAmounPayable(Long startTime, Long endTime, CfCarPark cfCarPark, Double unitPrice, String currentCalculateingCarType, CfCarPark calculateingCfCarPark, Integer counts) throws Exception;
+    BigDecimal fixed24HoursCalculateTheAmounPayable(Long startTime, Long endTime, CfCarPark cfCarPark, BigDecimal unitPrice, String currentCalculateingCarType, CfCarPark calculateingCfCarPark, Integer counts) throws Exception;
 
     /**
      * 每日动态模式计算停车费
@@ -125,7 +126,7 @@ public interface CfCarParkChargingRulesService {
      * @return
      * @throws Exception
      */
-    public Double dynamicCalculateTheAmounPayable(Long startTime, Long endTime, Double totalFee, String carType, CfCarPark calculateingCfCarPark, Integer counts, List<CfCarParkChargingRules> carParkChargingRules, Long upperLimitTime, Double countFee, Long originalStartTime) throws Exception;
+    public BigDecimal dynamicCalculateTheAmounPayable(Long startTime, Long endTime, BigDecimal totalFee, String carType, CfCarPark calculateingCfCarPark, Integer counts, List<CfCarParkChargingRules> carParkChargingRules, Long upperLimitTime, BigDecimal countFee, Long originalStartTime) throws Exception;
 
     /**
      * 24小时动态模式计算停车费
@@ -139,7 +140,7 @@ public interface CfCarParkChargingRulesService {
      * @return
      * @throws Exception
      */
-    public Double dynamic24HoursCalculateTheAmounPayable(Long totalTime, Long startCountTime, String carType, CfCarPark calculateingCfCarPark, Integer counts, List<CfCarParkChargingRules> carParkChargingRules, double currentPrice) throws Exception;
+    public BigDecimal dynamic24HoursCalculateTheAmounPayable(Long totalTime, Long startCountTime, String carType, CfCarPark calculateingCfCarPark, Integer counts, List<CfCarParkChargingRules> carParkChargingRules, BigDecimal currentPrice) throws Exception;
 
     /**
      * 根据停车场获取收费规则

@@ -1603,9 +1603,9 @@ public class CfCarParkUseLogServiceImpl implements CfCarParkUseLogService {
             cfOrder.setGoodsImage(cfCarParkUseLog.getOutSmallImage());
         }
         cfOrder.setGoodsType(GoodsType.CARPARK_PAYMENT);
-        cfOrder.setAmountsPayable(BigDecimal.valueOf(0.00));
-        cfOrder.setAmountActuallyPaid(BigDecimal.valueOf(0.00));
-        cfOrder.setRefundAmount(BigDecimal.valueOf(0.00));
+        cfOrder.setAmountsPayable(BigDecimal.ZERO);
+        cfOrder.setAmountActuallyPaid(BigDecimal.ZERO);
+        cfOrder.setRefundAmount(BigDecimal.ZERO);
         cfOrder.setCouponId("");
         cfOrder.setStatus(PayStatus.TO_BE_PAID);
         cfOrder.setPayTime(0L);
@@ -1615,16 +1615,16 @@ public class CfCarParkUseLogServiceImpl implements CfCarParkUseLogService {
         cfOrder.setThirdPartyOrderId("");
         cfOrder.setShopId(cfCarParkUseLog.getCarParkId());
         if(cfOrder.getScorePaid()==null){
-            cfOrder.setScorePaid(new BigDecimal(0.00));
+            cfOrder.setScorePaid(BigDecimal.ZERO);
         }
         if(StringUtils.isEmpty(cfOrder.getScoreKeyFlag())){
             cfOrder.setScoreKeyFlag("");
         }
         if(cfOrder.getCouponPaid()==null){
-            cfOrder.setCouponPaid(new BigDecimal(0.00));
+            cfOrder.setCouponPaid(BigDecimal.ZERO);
         }
         if(cfOrder.getScoreMoney()==null){
-            cfOrder.setScoreMoney(new BigDecimal(0.00));
+            cfOrder.setScoreMoney(BigDecimal.ZERO);
         }
         return cfOrder;
     }
@@ -1888,8 +1888,8 @@ public class CfCarParkUseLogServiceImpl implements CfCarParkUseLogService {
             cfOrder.setGoodsImage("");
             cfOrder.setGoodsType(GoodsType.PARKING_SUBSCRIPTION);
             cfOrder.setAmountsPayable(cfCarPark.getSubscribeFee());
-            cfOrder.setAmountActuallyPaid(new BigDecimal("0.00"));
-            cfOrder.setRefundAmount(new BigDecimal("0.00"));
+            cfOrder.setAmountActuallyPaid(BigDecimal.ZERO);
+            cfOrder.setRefundAmount(BigDecimal.ZERO);
             cfOrder.setCouponId("");
             cfOrder.setStatus(PayStatus.TO_BE_PAID);
             cfOrder.setPayTime(0L);
@@ -2011,8 +2011,8 @@ public class CfCarParkUseLogServiceImpl implements CfCarParkUseLogService {
                     cfOrderQuery.setGoodsType(GoodsType.CARPARK_PAYMENT);
                     List<CfOrder> cfOrders = cfOrderService.getListByQuery(cfOrderQuery);
                     //在免费时间内出场(放行)，同时更新对应订单，更新订车记录出场时间
-                    cfOrders.get(0).setAmountsPayable(BigDecimal.valueOf(0.00));
-                    cfOrders.get(0).setAmountActuallyPaid(BigDecimal.valueOf(0.00));
+                    cfOrders.get(0).setAmountsPayable(BigDecimal.ZERO);
+                    cfOrders.get(0).setAmountActuallyPaid(BigDecimal.ZERO);
                     cfOrders.get(0).setStatus(PayStatus.PAID);
                     cfOrders.get(0).setPayTime(System.currentTimeMillis());
                     cfOrders.get(0).setPaymentAgencyShortName("system_free_time");
