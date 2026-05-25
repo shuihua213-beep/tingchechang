@@ -7,10 +7,10 @@ spring:
   profiles:
     active: dev
   redis:
-    host: redis数据库地址
-    port: 6379
-    password: redis密码
-    database: 0
+    host: ${REDIS_HOST:127.0.0.1}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    database: ${REDIS_DATABASE:0}
     jedis:
       pool:
         maxActive: 3
@@ -21,5 +21,4 @@ dubbo:
   application:
     name: ${spring.application.name}
   registry:
-    address: zookeeper://127.0.0.1:2181
-
+    address: zookeeper://${ZK_HOST:127.0.0.1}:${ZK_PORT:2181}

@@ -5,9 +5,9 @@ spring:
   datasource:
     name: caifeng
     type: com.alibaba.druid.pool.DruidDataSource
-    url: jdbc:mysql://mysql数据库地址:3306/caifeng?characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false
-    username: caifeng
-    password: mysql数据库密码
+    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/${MYSQL_DB:caifeng}?characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false
+    username: ${MYSQL_USER:caifeng}
+    password: ${MYSQL_PASSWORD:caifeng}
     driver-class-name: com.mysql.jdbc.Driver
     maxActive: 32
 
@@ -17,4 +17,3 @@ mybatis:
 #  typeAliasesPackage: com.cf.pojo
   mapperLocations: classpath:com.cf.ucenter.dao.mapper/*.xml
   configLocation: classpath:config/SqlMapConfig.xml
-

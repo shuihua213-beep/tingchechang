@@ -84,4 +84,73 @@
 
 4．商城与营销功能 此功能主要考虑到使用者有运营周边的兴趣和能力，在商城和广告营销上进行盈利
 
-安装教程 安装JDK1.8+ 安装MySQL5.6+ 安装MongoDB 安装Redis 安装FastDFS 安装Zookeeper 将打包好的代码上传到服务器上，直接运行jar包即可 详细安装教程文档地址 使用说明(swagger2文档) 国内领先水平 专业演示 旧版本(V2.0)演示地址已经停止, 最新版本是(V3.0),V3.0上面已经给APP和演示地址了 如果您发现有代码有什么不足之处请跟我留言，如果我留言不及时请加我个人微信Dove981011512(学生搞啥论文的以及个人小白不要加我，暂时没时间和精力帮忙，还望您见谅和理解)
+安装教程
+1. 安装JDK1.8+
+2. 安装MySQL5.6+
+3. 安装MongoDB
+4. 安装Redis
+5. 安装FastDFS (或 MinIO)
+6. 安装Zookeeper
+7. 将打包好的代码上传到服务器上，直接运行jar包即可
+
+## 统一环境变量配置 (v3.0+)
+
+所有服务模块已统一环境变量命名规范，支持 Docker 部署与本地开发一键切换。
+
+### 快速启动 (Docker Compose)
+
+```bash
+# 1. 编辑 .env 文件，修改数据库/中间件地址密码
+vim .env
+
+# 2. 启动中间件 (MySQL/Redis/MongoDB/Zookeeper/MinIO)
+docker-compose up -d
+
+# 3. 使用 Maven 打包
+mvn clean package -DskipTests
+
+# 4. 启动各微服务 (Spring Boot 会自动读取 .env 中的环境变量)
+java -jar xxx-service.jar
+```
+
+### 环境变量命名规范
+
+所有环境变量均有本地开发默认值，**本地开发不设置任何环境变量即可直接运行**。
+
+| 变量名 | 说明 | 默认值 |
+|---|---|---|
+| `ZK_HOST` | Zookeeper 注册中心地址 | 127.0.0.1 |
+| `ZK_PORT` | Zookeeper 端口 | 2181 |
+| `MYSQL_HOST` | MySQL 地址 | 127.0.0.1 |
+| `MYSQL_PORT` | MySQL 端口 | 3306 |
+| `MYSQL_DB` | MySQL 数据库名 | caifeng |
+| `MYSQL_USER` | MySQL 用户名 | caifeng |
+| `MYSQL_PASSWORD` | MySQL 密码 | caifeng |
+| `REDIS_HOST` | Redis 地址 | 127.0.0.1 |
+| `REDIS_PORT` | Redis 端口 | 6379 |
+| `REDIS_PASSWORD` | Redis 密码 | (空) |
+| `REDIS_DATABASE` | Redis 数据库编号 | 0 |
+| `MONGODB_URI` | MongoDB 连接串 | mongodb://caifeng:caifeng@127.0.0.1:27017/caifeng |
+| `MONGODB_DATABASE` | MongoDB 数据库名 | caifeng |
+| `FASTDFS_TRACKER_SERVERS` | FastDFS Tracker 地址 | 127.0.0.1:22122 |
+| `AUTHORITY_API_URL` | 认证服务 API 地址 | http://127.0.0.1:16007 |
+
+### 生产环境部署
+
+```bash
+# 方式一: 使用脚本交互生成 .env
+./replace.sh
+
+# 方式二: 直接设置环境变量后启动
+export MYSQL_HOST=192.168.1.100
+export MYSQL_PASSWORD=your_prod_password
+export REDIS_HOST=192.168.1.101
+export REDIS_PASSWORD=your_redis_password
+export ZK_HOST=192.168.1.102
+java -jar xxx-service.jar
+
+# 方式三: 使用命令行参数快速生成 .env
+./replace.sh gen 192.168.1.102 192.168.1.100 caifeng your_db_pwd 192.168.1.101 your_redis_pwd 192.168.1.103
+```
+
+详细安装教程文档地址 使用说明(swagger2文档) 国内领先水平 专业演示 旧版本(V2.0)演示地址已经停止, 最新版本是(V3.0),V3.0上面已经给APP和演示地址了 如果您发现有代码有什么不足之处请跟我留言，如果我留言不及时请加我个人微信Dove981011512(学生搞啥论文的以及个人小白不要加我，暂时没时间和精力帮忙，还望您见谅和理解)

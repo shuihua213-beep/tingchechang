@@ -1,24 +1,188 @@
 #!/bin/bash
-IP=$1
-DBIP=$2
-DBUSER=$3
-DBPWD=$4
-RDIP=$5
-RDPWD=$6
-MGIP=$7
-MGUSER=$8
-MGPWD=$9
+# 统一环境变量部署脚本 - 生成 .env 文件供 docker-compose 使用
+# 用法: ./replace.sh [生成模式]
+#   ./replace.sh                          # 交互式询问各项配置
+#   ./replace.sh env                      # 使用当前环境变量生成 .env
+#   ./replace.sh gen ZK_IP DB_IP DB_USER DB_PWD REDIS_IP REDIS_PWD MONGO_IP MONGO_USER MONGO_PWD FASTDFS_IP
 
-find /www/java/cf_bak/ -type f -regex ".*\.yml\|.*\.properties" |xargs perl -pi -e"s/zookeeper:\/\/47.100.11.151/zookeeper:\/\/${IP}/g"
+ENV_FILE=".env"
 
-find /www/java/cf_bak/ -type f -regex ".*\.yml\|.*\.properties" |xargs perl -pi -e"s/mysql:\/\/47.100.11.151/mysql:\/\/${DBIP}/g"
+gen_env_from_args() {
+    cat > ${ENV_FILE} <<EOF
+# ========== Zookeeper / Dubbo 注册中心 ==========
+ZK_HOST=${1:-127.0.0.1}
+ZK_PORT=2181
 
-find /www/java/cf_bak/ -type f -regex ".*\.yml\|.*\.properties" |xargs perl -pi -e"s/username: caifeng/username: ${DBUSER}/g"
+# ========== MySQL 数据库 ==========
+MYSQL_HOST=${2:-127.0.0.1}
+MYSQL_PORT=3306
+MYSQL_DB=caifeng
+MYSQL_USER=${3:-caifeng}
+MYSQL_PASSWORD=${4:-caifeng}
 
-find /www/java/cf_bak/ -type f -regex ".*\.yml\|.*\.properties" |xargs perl -pi -e"s/password: P8CMBiepXSLRfGAL/password: ${DBPWD}/g"
+# ========== Redis 缓存 ==========
+REDIS_HOST=${5:-127.0.0.1}
+REDIS_PORT=6379
+REDIS_PASSWORD=${6:-}
+REDIS_DATABASE=0
 
-find /www/java/cf_bak/ -type f -regex ".*\.yml\|.*\.properties" |xargs perl -pi -e"s/host: 47.100.11.151/host: ${RDIP}/g"
+# ========== MongoDB 文档数据库 ==========
+MONGODB_URI=${7:+mongodb://${8:-caifeng}:${8:+${6:-caifeng}}@${7:-127.0.0.1}:27017/caifeng}
+MONGODB_URI=${MONGODB_URI:-mongodb://caifeng:caifeng@127.0.0.1:27017/caifeng}
+MONGODB_DATABASE=caifeng
 
-find /www/java/cf_bak/ -type f -regex ".*\.yml\|.*\.properties" |xargs perl -pi -e"s/password: gebixiaowang/password: ${RDPWD}/g"
+# ========== FastDFS 文件存储 ==========
+FASTDFS_TRACKER_SERVERS=${9:-127.0.0.1:22122}
 
-find /www/java/cf_bak/ -type f -regex ".*\.yml\|.*\.properties" |xargs perl -pi -e"s/mongodb:\/\/caifeng:caifEng666@47.100.11.151:27017\/\?authSource=caifeng/mongodb:\/\/${MGUSER}:${MGPWD}@${MGIP}:27017\/\?authSource=caifeng/g"
+# ========== 设备相关（可选） ==========
+HK_BASE_HOST=192.168.3.19
+HK_LOCAL_IP=192.168.3.252
+HK_DEVICE_IP=192.168.3.249
+HK_PORT=8000
+HK_USERNAME=admin
+HK_PASSWORD=abcde12345
+
+DH_CAMERA_IP=192.168.3.200
+DH_CAMERA_SERVER=192.168.3.19:8089
+DH_CAMERA_PORT=37777
+DH_CAMERA_USERNAME=admin
+DH_CAMERA_PASSWORD=admin123
+DH_CAMERA_UUID=6F01FFAPAJ65519
+
+DH_LED_IP=192.168.3.250
+DH_LED_PORT=5005
+DH_LED_UUID=6F01FFAPAJ65519
+
+# ========== 认证/加密 ==========
+AUTH_TOKEN_VALIDITY_SECONDS=1200
+AUTH_CLIENT_ID=oauth2_client_id
+AUTH_CLIENT_SECRET=oauth2_client_secret
+AUTH_COOKIE_DOMAIN=xuecheng.com
+AUTH_COOKIE_MAX_AGE=-1
+ENCRYPT_KEYSTORE_LOCATION=classpath:/xc.keystore
+ENCRYPT_KEYSTORE_SECRET=xuechengkeystore
+ENCRYPT_KEYSTORE_ALIAS=xckey
+ENCRYPT_KEYSTORE_PASSWORD=xuecheng
+
+# ========== 其他 ==========
+AUTHORITY_API_URL=http://127.0.0.1:16007
+EOF
+    echo ".env 文件已生成: ${ENV_FILE}"
+}
+
+gen_env_from_current_env() {
+    cat > ${ENV_FILE} <<EOF
+# ========== Zookeeper / Dubbo 注册中心 ==========
+ZK_HOST=${ZK_HOST:-127.0.0.1}
+ZK_PORT=${ZK_PORT:-2181}
+
+# ========== MySQL 数据库 ==========
+MYSQL_HOST=${MYSQL_HOST:-127.0.0.1}
+MYSQL_PORT=${MYSQL_PORT:-3306}
+MYSQL_DB=${MYSQL_DB:-caifeng}
+MYSQL_USER=${MYSQL_USER:-caifeng}
+MYSQL_PASSWORD=${MYSQL_PASSWORD:-caifeng}
+
+# ========== Redis 缓存 ==========
+REDIS_HOST=${REDIS_HOST:-127.0.0.1}
+REDIS_PORT=${REDIS_PORT:-6379}
+REDIS_PASSWORD=${REDIS_PASSWORD:-}
+REDIS_DATABASE=${REDIS_DATABASE:-0}
+
+# ========== MongoDB 文档数据库 ==========
+MONGODB_URI=${MONGODB_URI:-mongodb://caifeng:caifeng@127.0.0.1:27017/caifeng}
+MONGODB_DATABASE=${MONGODB_DATABASE:-caifeng}
+
+# ========== FastDFS 文件存储 ==========
+FASTDFS_TRACKER_SERVERS=${FASTDFS_TRACKER_SERVERS:-127.0.0.1:22122}
+
+# ========== 设备相关 ==========
+HK_BASE_HOST=${HK_BASE_HOST:-192.168.3.19}
+HK_LOCAL_IP=${HK_LOCAL_IP:-192.168.3.252}
+HK_DEVICE_IP=${HK_DEVICE_IP:-192.168.3.249}
+HK_PORT=${HK_PORT:-8000}
+HK_USERNAME=${HK_USERNAME:-admin}
+HK_PASSWORD=${HK_PASSWORD:-abcde12345}
+
+DH_CAMERA_IP=${DH_CAMERA_IP:-192.168.3.200}
+DH_CAMERA_SERVER=${DH_CAMERA_SERVER:-192.168.3.19:8089}
+DH_CAMERA_PORT=${DH_CAMERA_PORT:-37777}
+DH_CAMERA_USERNAME=${DH_CAMERA_USERNAME:-admin}
+DH_CAMERA_PASSWORD=${DH_CAMERA_PASSWORD:-admin123}
+DH_CAMERA_UUID=${DH_CAMERA_UUID:-6F01FFAPAJ65519}
+
+DH_LED_IP=${DH_LED_IP:-192.168.3.250}
+DH_LED_PORT=${DH_LED_PORT:-5005}
+DH_LED_UUID=${DH_LED_UUID:-6F01FFAPAJ65519}
+
+# ========== 认证/加密 ==========
+AUTH_TOKEN_VALIDITY_SECONDS=${AUTH_TOKEN_VALIDITY_SECONDS:-1200}
+AUTH_CLIENT_ID=${AUTH_CLIENT_ID:-oauth2_client_id}
+AUTH_CLIENT_SECRET=${AUTH_CLIENT_SECRET:-oauth2_client_secret}
+AUTH_COOKIE_DOMAIN=${AUTH_COOKIE_DOMAIN:-xuecheng.com}
+AUTH_COOKIE_MAX_AGE=${AUTH_COOKIE_MAX_AGE:-1}
+ENCRYPT_KEYSTORE_LOCATION=${ENCRYPT_KEYSTORE_LOCATION:-classpath:/xc.keystore}
+ENCRYPT_KEYSTORE_SECRET=${ENCRYPT_KEYSTORE_SECRET:-xuechengkeystore}
+ENCRYPT_KEYSTORE_ALIAS=${ENCRYPT_KEYSTORE_ALIAS:-xckey}
+ENCRYPT_KEYSTORE_PASSWORD=${ENCRYPT_KEYSTORE_PASSWORD:-xuecheng}
+
+# ========== 其他 ==========
+AUTHORITY_API_URL=${AUTHORITY_API_URL:-http://127.0.0.1:16007}
+EOF
+    echo ".env 文件已生成: ${ENV_FILE}"
+}
+
+interactive_gen() {
+    echo "============================================"
+    echo "  统一环境配置生成器"
+    echo "  直接回车使用默认值 (方括号内)"
+    echo "============================================"
+    echo ""
+
+    read -p "Zookeeper 地址 [127.0.0.1]: " ZK_HOST
+    ZK_HOST=${ZK_HOST:-127.0.0.1}
+
+    read -p "MySQL 地址 [127.0.0.1]: " MYSQL_HOST
+    MYSQL_HOST=${MYSQL_HOST:-127.0.0.1}
+
+    read -p "MySQL 端口 [3306]: " MYSQL_PORT
+    MYSQL_PORT=${MYSQL_PORT:-3306}
+
+    read -p "MySQL 数据库名 [caifeng]: " MYSQL_DB
+    MYSQL_DB=${MYSQL_DB:-caifeng}
+
+    read -p "MySQL 用户名 [caifeng]: " MYSQL_USER
+    MYSQL_USER=${MYSQL_USER:-caifeng}
+
+    read -p "MySQL 密码 [caifeng]: " MYSQL_PASSWORD
+    MYSQL_PASSWORD=${MYSQL_PASSWORD:-caifeng}
+
+    read -p "Redis 地址 [127.0.0.1]: " REDIS_HOST
+    REDIS_HOST=${REDIS_HOST:-127.0.0.1}
+
+    read -p "Redis 端口 [6379]: " REDIS_PORT
+    REDIS_PORT=${REDIS_PORT:-6379}
+
+    read -p "Redis 密码 (可为空) []: " REDIS_PASSWORD
+
+    read -p "MongoDB 连接字符串 [mongodb://caifeng:caifeng@127.0.0.1:27017/caifeng]: " MONGODB_URI
+    MONGODB_URI=${MONGODB_URI:-mongodb://caifeng:caifeng@127.0.0.1:27017/caifeng}
+
+    read -p "FastDFS Tracker 地址 [127.0.0.1:22122]: " FASTDFS_TRACKER_SERVERS
+    FASTDFS_TRACKER_SERVERS=${FASTDFS_TRACKER_SERVERS:-127.0.0.1:22122}
+
+    gen_env_from_current_env
+}
+
+case "${1}" in
+    gen)
+        shift
+        gen_env_from_args "$@"
+        ;;
+    env)
+        gen_env_from_current_env
+        ;;
+    *)
+        interactive_gen
+        ;;
+esac

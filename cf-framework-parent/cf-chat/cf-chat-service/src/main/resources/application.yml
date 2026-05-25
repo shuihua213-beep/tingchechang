@@ -9,20 +9,20 @@ spring:
   datasource:
     name: caifeng
     type: com.alibaba.druid.pool.DruidDataSource
-    url: jdbc:mysql://mysql数据库地址:3306/caifeng?characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false
-    username: caifeng
-    password: mysql数据库密码
+    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/${MYSQL_DB:caifeng}?characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false
+    username: ${MYSQL_USER:caifeng}
+    password: ${MYSQL_PASSWORD:caifeng}
     driver-class-name: com.mysql.jdbc.Driver
     maxActive: 32
   data:
     mongodb:
-      uri: mongodb://caifeng:caifEng666@mysql数据库地址:27017/?authSource=caifeng
-      database: caifeng
+      uri: ${MONGODB_URI:mongodb://caifeng:caifeng@127.0.0.1:27017/caifeng}
+      database: ${MONGODB_DATABASE:caifeng}
   redis:
-    host: redis数据库地址
-    port: 6379
-    password: redis密码
-    database: 0
+    host: ${REDIS_HOST:127.0.0.1}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    database: ${REDIS_DATABASE:0}
     jedis:
       pool:
         maxActive: 3
@@ -47,7 +47,7 @@ dubbo:
     threads: 200
     accepts: 0
   registry:
-    address: zookeeper://127.0.0.1:2181
+    address: zookeeper://${ZK_HOST:127.0.0.1}:${ZK_PORT:2181}
   provider.filter: -exception
 
   # 数据源 ds0,ds1
@@ -58,9 +58,9 @@ dubbo:
 #      ds0:
 #        type: com.alibaba.druid.pool.DruidDataSource
 #        driver-class-name: com.mysql.jdbc.Driver
-#        url: jdbc:mysql://mysql数据库地址:3306/caifeng?characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false
-#        username: caifeng
-#        password: mysql数据库密码
+#        url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/${MYSQL_DB:caifeng}?characterEncoding=utf-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC&useSSL=false
+#        username: ${MYSQL_USER:caifeng}
+#        password: ${MYSQL_PASSWORD:caifeng}
 #      # 第二个数据库
 #      ds1:
 #        type: com.alibaba.druid.pool.DruidDataSource
@@ -94,4 +94,3 @@ dubbo:
 #        show: true
 #  main:
 #    allow-bean-definition-overriding: true
-
